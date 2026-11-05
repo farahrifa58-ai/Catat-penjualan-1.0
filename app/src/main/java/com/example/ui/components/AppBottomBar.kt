@@ -103,8 +103,10 @@ fun AppBottomBar(
                 label = {
                     Text(
                         text = item.title(strings),
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        fontSize = 10.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
