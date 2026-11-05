@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -135,7 +138,11 @@ fun SalesScreen(
     val totalRemainingItems = editableItems.sumOf { it.remaining }
     val allConditionsComplete = editableItems.all { it.isComplete }
 
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     LazyColumn(
+        state = listState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -605,8 +612,9 @@ fun SalesScreen(
                             viewModel.saveSalesResults(
                                 items = updatedEntities,
                                 onSuccess = {
-                                    viewModel.clearDepositForSales()
-                                    viewModel.navigateTo(ScreenDestination.BERANDA)
+                                    coroutineScope.launch {
+                                        listState.animateScrollToItem(0)
+                                    }
                                 }
                             )
                         }

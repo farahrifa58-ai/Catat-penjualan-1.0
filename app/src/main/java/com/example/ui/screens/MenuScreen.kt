@@ -106,6 +106,10 @@ fun MenuScreen(
     var editingStall by remember { mutableStateOf<StallEntity?>(null) }
     var stallToDelete by remember { mutableStateOf<StallEntity?>(null) }
 
+    // Dialog states for Info (tanda i)
+    var showMenuInfoDialog by remember { mutableStateOf(false) }
+    var showStallInfoDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         floatingActionButton = {
             // ONLY ONE BUTTON AT THE BOTTOM, as requested by the user!
@@ -233,45 +237,41 @@ fun MenuScreen(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Header Title (NO BUTTON ON TOP, as requested!)
+                    // Header Title with Clickable Info Button (tanda i)
                     item {
-                        Column(modifier = Modifier.padding(vertical = 2.dp)) {
-                            Text(
-                                text = "Menu Makanan",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "${menuItems.size} jenis menu terdaftar",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Info Notice Card
-                    item {
-                        Card(
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
-                            modifier = Modifier.fillMaxWidth()
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(12.dp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Menu Makanan",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Text(
+                                    text = "${menuItems.size} jenis menu terdaftar",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(
+                                onClick = { showMenuInfoDialog = true },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                                    .testTag("btn_info_menu")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Info,
-                                    contentDescription = null,
+                                    contentDescription = "Informasi Menu",
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = "Setiap menu dapat ditambahkan foto, HPP (modal), harga standar, serta harga jual khusus untuk masing-masing lapak.",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }
@@ -532,45 +532,41 @@ fun MenuScreen(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Header Title (NO BUTTON ON TOP, as requested!)
+                    // Header Title with Clickable Info Button (tanda i)
                     item {
-                        Column(modifier = Modifier.padding(vertical = 2.dp)) {
-                            Text(
-                                text = "Daftar Lapak & Harga",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "${stalls.size} lapak terdaftar",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Notice Banner: Automatic price following explanation
-                    item {
-                        Card(
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
-                            modifier = Modifier.fillMaxWidth()
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(12.dp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Daftar Lapak & Harga",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Text(
+                                    text = "${stalls.size} lapak terdaftar",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(
+                                onClick = { showStallInfoDialog = true },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                                    .testTag("btn_info_stall")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Info,
-                                    contentDescription = null,
+                                    contentDescription = "Informasi Harga Lapak",
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = "Atur harga jual produk untuk setiap lapak di bawah ini. Saat Anda memilih lapak di Setoran, harga jual produk akan otomatis mengikuti harga lapak yang sudah diatur di sini.",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }
@@ -772,6 +768,74 @@ fun MenuScreen(
             }
         )
     }
+
+    // Dialog: Info Menu Makanan
+    if (showMenuInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showMenuInfoDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Informasi Menu",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Setiap menu dapat ditambahkan foto, HPP (modal), harga standar, serta harga jual khusus untuk masing-masing lapak.",
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showMenuInfoDialog = false }) {
+                    Text("Tutup")
+                }
+            }
+        )
+    }
+
+    // Dialog: Info Harga Lapak
+    if (showStallInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showStallInfoDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Informasi Harga Lapak",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Atur harga jual produk untuk setiap lapak di bawah ini. Saat Anda memilih lapak di Setoran, harga jual produk akan otomatis mengikuti harga lapak yang sudah diatur di sini.",
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showStallInfoDialog = false }) {
+                    Text("Tutup")
+                }
+            }
+        )
+    }
 }
 
 /**
@@ -967,69 +1031,109 @@ fun ProductPriceRowInStall(
     val currentAmount = priceDigits.toDoubleOrNull() ?: 0.0
     val margin = (currentAmount - menu.hpp).coerceAtLeast(0.0)
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 3.dp)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = menu.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "HPP: ${FormatUtils.formatRupiah(menu.hpp)} | Laba: ${FormatUtils.formatRupiah(margin)}",
-                fontSize = 10.sp,
-                color = if (margin > 0) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        // Price Input
-        OutlinedTextField(
-            value = if (priceDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmount),
-            onValueChange = { input ->
-                val digits = input.filter { it.isDigit() }
-                priceDigits = digits
-                isDirty = true
-            },
-            prefix = { Text("Rp ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-            placeholder = { Text("0", fontSize = 11.sp) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .width(130.dp)
-                .height(48.dp)
-                .testTag("input_stall_price_${menu.id}")
-        )
-
-        Spacer(modifier = Modifier.width(6.dp))
-
-        // Save Price Button
-        Button(
-            onClick = {
-                val p = priceDigits.toDoubleOrNull() ?: 0.0
-                if (p > 0) {
-                    onSave(p)
-                    isDirty = false
-                }
-            },
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDirty) MaterialTheme.colorScheme.primary else StatusGreen
-            ),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-            modifier = Modifier
-                .height(38.dp)
-                .testTag("btn_save_price_${menu.id}")
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = "Simpan",
-                modifier = Modifier.size(16.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = menu.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "HPP: ${FormatUtils.formatRupiah(menu.hpp)}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "•",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        text = "Laba: ${FormatUtils.formatRupiah(margin)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (margin > 0) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Price Input Field - clean, uncompressed, beautifully centered
+            OutlinedTextField(
+                value = if (priceDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmount),
+                onValueChange = { input ->
+                    val digits = input.filter { it.isDigit() }.take(9)
+                    priceDigits = digits
+                    isDirty = true
+                },
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                ),
+                prefix = {
+                    Text(
+                        text = "Rp ",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                placeholder = { Text("0", fontSize = 12.sp) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .width(135.dp)
+                    .testTag("input_stall_price_${menu.id}")
             )
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Save Price Button
+            Button(
+                onClick = {
+                    val p = priceDigits.toDoubleOrNull() ?: 0.0
+                    if (p > 0) {
+                        onSave(p)
+                        isDirty = false
+                    }
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDirty) MaterialTheme.colorScheme.primary else StatusGreen,
+                    contentColor = androidx.compose.ui.graphics.Color.White
+                ),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                modifier = Modifier
+                    .height(48.dp)
+                    .testTag("btn_save_price_${menu.id}")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Simpan",
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
@@ -1215,26 +1319,60 @@ fun AddEditStallFullDialog(
                     activeMenus.forEach { menu ->
                         val currentDigits = priceMap[menu.id] ?: menu.price.toLong().toString()
                         val currentAmt = currentDigits.toDoubleOrNull() ?: menu.price
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
+                        Card(
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(text = menu.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text(text = "Standar: ${FormatUtils.formatRupiah(menu.price)}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = menu.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Standar: ${FormatUtils.formatRupiah(menu.price)}",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = if (currentDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmt),
+                                    onValueChange = { str ->
+                                        val digits = str.filter { it.isDigit() }.take(9)
+                                        priceMap[menu.id] = digits
+                                    },
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    ),
+                                    prefix = {
+                                        Text(
+                                            text = "Rp ",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.width(135.dp)
+                                )
                             }
-                            OutlinedTextField(
-                                value = if (currentDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmt),
-                                onValueChange = { str ->
-                                    val digits = str.filter { it.isDigit() }
-                                    priceMap[menu.id] = digits
-                                },
-                                prefix = { Text("Rp ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.width(135.dp).height(48.dp)
-                            )
                         }
                     }
                 }
@@ -1470,28 +1608,54 @@ fun AddEditMenuFullDialog(
                     stalls.forEach { stall ->
                         val priceRaw = stallPriceMap[stall.id] ?: defaultPriceDigits
                         val priceAmount = priceRaw.toDoubleOrNull() ?: defAmount
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
+                        Card(
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp)
                         ) {
-                            Text(
-                                text = stall.name,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                modifier = Modifier.weight(1f)
-                            )
-                            OutlinedTextField(
-                                value = if (priceRaw.isEmpty()) "" else FormatUtils.formatNumber(priceAmount),
-                                onValueChange = { str ->
-                                    val digits = str.filter { it.isDigit() }
-                                    stallPriceMap[stall.id] = digits
-                                },
-                                prefix = { Text("Rp ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.width(135.dp).height(48.dp)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = stall.name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = if (priceRaw.isEmpty()) "" else FormatUtils.formatNumber(priceAmount),
+                                    onValueChange = { str ->
+                                        val digits = str.filter { it.isDigit() }.take(9)
+                                        stallPriceMap[stall.id] = digits
+                                    },
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    ),
+                                    prefix = {
+                                        Text(
+                                            text = "Rp ",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.width(135.dp)
+                                )
+                            }
                         }
                     }
                 }

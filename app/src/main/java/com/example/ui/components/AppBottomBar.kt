@@ -100,13 +100,16 @@ fun AppBottomBar(
                         contentDescription = item.title(strings)
                     )
                 },
+                alwaysShowLabel = true,
                 label = {
                     Text(
                         text = item.title(strings),
-                        fontSize = 10.sp,
+                        fontSize = 9.5.sp,
+                        letterSpacing = (-0.3).sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         maxLines = 1,
-                        softWrap = false
+                        softWrap = false,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
