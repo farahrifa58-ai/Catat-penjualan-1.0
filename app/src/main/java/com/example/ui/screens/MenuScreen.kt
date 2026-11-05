@@ -30,19 +30,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +56,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,245 +89,558 @@ fun MenuScreen(
 ) {
     val strings = viewModel.strings
     val menuItems by viewModel.allMenuItems.collectAsStateWithLifecycle()
-    val stalls by viewModel.activeStalls.collectAsStateWithLifecycle()
+    val activeMenus by viewModel.activeMenuItems.collectAsStateWithLifecycle()
+    val stalls by viewModel.allStalls.collectAsStateWithLifecycle()
     val allPrices by viewModel.allStallPrices.collectAsStateWithLifecycle()
 
-    var showAddEditDialog by remember { mutableStateOf(false) }
-    var editingItem by remember { mutableStateOf<MenuItemEntity?>(null) }
-    var itemToDelete by remember { mutableStateOf<MenuItemEntity?>(null) }
+    // Tab state: 0 = Daftar Menu, 1 = Daftar Lapak
+    var selectedFeatureTab by remember { mutableIntStateOf(0) }
+
+    // Dialog states for Menu
+    var showAddEditMenuDialog by remember { mutableStateOf(false) }
+    var editingMenuItem by remember { mutableStateOf<MenuItemEntity?>(null) }
+    var menuItemToDelete by remember { mutableStateOf<MenuItemEntity?>(null) }
+
+    // Dialog states for Stall
+    var showAddEditStallDialog by remember { mutableStateOf(false) }
+    var editingStall by remember { mutableStateOf<StallEntity?>(null) }
+    var stallToDelete by remember { mutableStateOf<StallEntity?>(null) }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    editingItem = null
-                    showAddEditDialog = true
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.testTag("menu_fab_add")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = strings.tambahMenu)
+            // ONLY ONE BUTTON AT THE BOTTOM, as requested by the user!
+            if (selectedFeatureTab == 0) {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        editingMenuItem = null
+                        showAddEditMenuDialog = true
+                    },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Tambah Menu", fontWeight = FontWeight.Bold) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.testTag("menu_fab_add")
+                )
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        editingStall = null
+                        showAddEditStallDialog = true
+                    },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Tambah Lapak", fontWeight = FontWeight.Bold) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.testTag("stall_fab_add")
+                )
             }
         },
         modifier = modifier
     ) { innerPadding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(innerPadding)
         ) {
-            // Notice Card
-            item {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    modifier = Modifier.fillMaxWidth()
+            // === TWO BUTTON SWITCH BAR: [🍽️ DAFTAR MENU] | [🏪 DAFTAR LAPAK] ===
+            Card(
+                shape = RoundedCornerShape(0.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(12.dp)
+                    // Button 1: Daftar Menu
+                    Button(
+                        onClick = { selectedFeatureTab = 0 },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = if (selectedFeatureTab == 0) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        contentPadding = PaddingValues(vertical = 10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("btn_tab_daftar_menu")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Info,
+                            imageVector = Icons.Default.RestaurantMenu,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Setiap menu dapat ditambahkan foto, HPP (biaya modal), serta harga jual khusus untuk masing-masing lapak.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Daftar Menu",
+                            fontWeight = if (selectedFeatureTab == 0) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    // Button 2: Daftar Lapak
+                    Button(
+                        onClick = { selectedFeatureTab = 1 },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = if (selectedFeatureTab == 1) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        contentPadding = PaddingValues(vertical = 10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("btn_tab_daftar_lapak")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Storefront,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Daftar Lapak",
+                            fontWeight = if (selectedFeatureTab == 1) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 14.sp
                         )
                     }
                 }
             }
 
-            if (menuItems.isEmpty()) {
-                item {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxWidth().padding(32.dp)
+            // === TAB CONTENT ===
+            if (selectedFeatureTab == 0) {
+                // ==========================================
+                // SUB-FEATURE 1: DAFTAR MENU MAKANAN
+                // ==========================================
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header Title (NO BUTTON ON TOP, as requested!)
+                    item {
+                        Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                            Text(
+                                text = "Menu Makanan",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "${menuItems.size} jenis menu terdaftar",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Info Notice Card
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(12.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Fastfood,
+                                    imageVector = Icons.Default.Info,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "Setiap menu dapat ditambahkan foto, HPP (modal), harga standar, serta harga jual khusus untuk masing-masing lapak.",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Text(
-                                text = "Belum Ada Menu Makanan",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "Silakan klik tombol '+' di bawah untuk menambahkan menu pertama Anda.",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    editingItem = null
-                                    showAddEditDialog = true
-                                },
-                                shape = RoundedCornerShape(10.dp)
+                        }
+                    }
+
+                    if (menuItems.isEmpty()) {
+                        item {
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(strings.tambahMenu)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(32.dp)
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Fastfood,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    Text(
+                                        text = "Belum Ada Menu Makanan",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Silakan klik tombol '+ Tambah Menu' di bawah untuk menambahkan menu makanan Anda.",
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Food cards (spacious, clean layout, no cramped text columns!)
+                        items(menuItems, key = { "menu_${it.id}" }) { item ->
+                            val menuStallPrices = allPrices.filter { it.menuId == item.id }
+
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("menu_item_${item.id}")
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    // Row 1: Photo, Name & Actions (Switch, Edit, Delete)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        // Photo / Icon
+                                        if (!item.photoUri.isNullOrBlank() && File(item.photoUri).exists()) {
+                                            AsyncImage(
+                                                model = File(item.photoUri),
+                                                contentDescription = item.name,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                            )
+                                        } else {
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(
+                                                        if (item.isActive) MaterialTheme.colorScheme.primaryContainer
+                                                        else MaterialTheme.colorScheme.surfaceVariant
+                                                    )
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Fastfood,
+                                                    contentDescription = null,
+                                                    tint = if (item.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(10.dp))
+
+                                        // Food Name
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = item.name,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 16.sp,
+                                                color = if (item.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
+                                            )
+                                            Text(
+                                                text = if (item.isActive) "Menu Aktif" else "Nonaktif",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = if (item.isActive) StatusGreen else MaterialTheme.colorScheme.outline
+                                            )
+                                        }
+
+                                        // Controls: Switch, Edit, Delete
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Switch(
+                                                checked = item.isActive,
+                                                onCheckedChange = { viewModel.toggleMenuItemActive(item) },
+                                                colors = SwitchDefaults.colors(
+                                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                                ),
+                                                modifier = Modifier.padding(end = 4.dp)
+                                            )
+
+                                            IconButton(
+                                                onClick = {
+                                                    editingMenuItem = item
+                                                    showAddEditMenuDialog = true
+                                                },
+                                                modifier = Modifier.size(34.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Edit,
+                                                    contentDescription = strings.editMenu,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+
+                                            IconButton(
+                                                onClick = { menuItemToDelete = item },
+                                                modifier = Modifier.size(34.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = strings.hapusMenu,
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    // Row 2: 3-Pill Section (Full width, clean stats!)
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Column {
+                                                Text(text = "Satuan", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text(text = item.unit, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            }
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1.3f)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Column {
+                                                Text(text = "HPP (Modal)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text(text = FormatUtils.formatRupiah(item.hpp), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            }
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1.4f)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Column {
+                                                Text(text = "Harga Standar", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                                Text(
+                                                    text = FormatUtils.formatRupiah(item.price),
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Row 3: Prices per stall breakdown
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    ) {
+                                        if (menuStallPrices.isEmpty()) {
+                                            Text(
+                                                text = "Harga standar (${FormatUtils.formatRupiah(item.price)}) berlaku di semua lapak.",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        } else {
+                                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text(
+                                                    text = "Harga Khusus di Lapak:",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                val priceBadges = menuStallPrices.map { sp ->
+                                                    val sName = stalls.find { it.id == sp.stallId }?.name ?: "Lapak"
+                                                    "$sName: ${FormatUtils.formatRupiah(sp.price)}"
+                                                }.joinToString("  •  ")
+                                                Text(
+                                                    text = priceBadges,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             } else {
-                items(menuItems, key = { "menu_${it.id}" }) { item ->
-                    val menuStallPrices = allPrices.filter { it.menuId == item.id }
+                // ==========================================
+                // SUB-FEATURE 2: DAFTAR LAPAK & HARGA PRODUK
+                // ==========================================
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Header Title (NO BUTTON ON TOP, as requested!)
+                    item {
+                        Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                            Text(
+                                text = "Daftar Lapak & Harga",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "${stalls.size} lapak terdaftar",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
 
-                    Card(
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("menu_item_${item.id}")
-                    ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
+                    // Notice Banner: Automatic price following explanation
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.padding(12.dp)
                             ) {
-                                // Food Photo or Fallback Icon
-                                if (!item.photoUri.isNullOrBlank() && File(item.photoUri).exists()) {
-                                    AsyncImage(
-                                        model = File(item.photoUri),
-                                        contentDescription = item.name,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-                                    )
-                                } else {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "Atur harga jual produk untuk setiap lapak di bawah ini. Saat Anda memilih lapak di Setoran, harga jual produk akan otomatis mengikuti harga lapak yang sudah diatur di sini.",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+
+                    if (stalls.isEmpty()) {
+                        item {
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(32.dp)
+                                ) {
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(
-                                                if (item.isActive) MaterialTheme.colorScheme.primaryContainer
-                                                else MaterialTheme.colorScheme.surfaceVariant
-                                            )
+                                            .size(64.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Fastfood,
+                                            imageVector = Icons.Default.Storefront,
                                             contentDescription = null,
-                                            tint = if (item.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                            modifier = Modifier.size(26.dp)
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(32.dp)
                                         )
                                     }
-                                }
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
+                                    Spacer(modifier = Modifier.height(14.dp))
                                     Text(
-                                        text = item.name,
+                                        text = "Belum Ada Lapak Terdaftar",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp,
-                                        color = if (item.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
-                                    )
-                                    Text(
-                                        text = "Satuan: ${item.unit} • HPP: ${FormatUtils.formatRupiah(item.hpp)}",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                // Active toggle switch
-                                Switch(
-                                    checked = item.isActive,
-                                    onCheckedChange = { viewModel.toggleMenuItemActive(item) },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                                    )
-                                )
-
-                                // Edit button
-                                IconButton(onClick = {
-                                    editingItem = item
-                                    showAddEditDialog = true
-                                }) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = strings.editMenu,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                // Delete button
-                                IconButton(onClick = { itemToDelete = item }) {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = strings.hapusMenu,
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-
-                            // Prices per stall breakdown section
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                if (menuStallPrices.isEmpty()) {
-                                    Text(
-                                        text = "Harga Standar: ${FormatUtils.formatRupiah(item.price)} / ${item.unit}",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                } else {
-                                    val priceTexts = menuStallPrices.map { sp ->
-                                        val sName = stalls.find { it.id == sp.stallId }?.name ?: "Lapak"
-                                        "$sName: ${FormatUtils.formatRupiah(sp.price)}"
-                                    }.joinToString("  •  ")
-
-                                    Text(
-                                        text = priceTexts,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Klik tombol '+ Tambah Lapak' di bawah untuk membuat lapak jualan pertama Anda.",
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
                                 }
                             }
+                        }
+                    } else {
+                        items(stalls, key = { "stall_full_${it.id}" }) { stall ->
+                            StallWithMenuPricesCard(
+                                stall = stall,
+                                activeMenus = activeMenus,
+                                allPrices = allPrices,
+                                strings = strings,
+                                onEditStall = {
+                                    editingStall = stall
+                                    showAddEditStallDialog = true
+                                },
+                                onDeleteStall = {
+                                    stallToDelete = stall
+                                },
+                                onToggleActive = {
+                                    viewModel.toggleStallActive(stall)
+                                },
+                                onSavePrice = { menuId, newPrice ->
+                                    viewModel.setStallPrice(stall.id, menuId, newPrice)
+                                }
+                            )
                         }
                     }
                 }
@@ -334,14 +648,14 @@ fun MenuScreen(
         }
     }
 
-    // Add / Edit Menu Dialog with Photo, HPP, Edit Lapak, & Stall Prices
-    if (showAddEditDialog) {
+    // Dialog: Add / Edit Menu Makanan
+    if (showAddEditMenuDialog) {
         AddEditMenuFullDialog(
-            item = editingItem,
+            item = editingMenuItem,
             stalls = stalls,
             allPrices = allPrices,
             strings = strings,
-            onDismiss = { showAddEditDialog = false },
+            onDismiss = { showAddEditMenuDialog = false },
             onUpdateStallNameAndPhoto = { stallId, newName, newPhotoUri ->
                 viewModel.updateStallNameAndPhoto(stallId, newName, newPhotoUri)
             },
@@ -349,9 +663,9 @@ fun MenuScreen(
                 viewModel.addStall(name, address, notes, photoUri, onCreated)
             },
             onSave = { name, hpp, unit, defaultPrice, photoUri, stallPrices ->
-                if (editingItem != null) {
+                if (editingMenuItem != null) {
                     viewModel.updateMenuItemFull(
-                        item = editingItem!!.copy(
+                        item = editingMenuItem!!.copy(
                             name = name,
                             hpp = hpp,
                             price = defaultPrice,
@@ -370,22 +684,22 @@ fun MenuScreen(
                         stallPrices = stallPrices
                     )
                 }
-                showAddEditDialog = false
+                showAddEditMenuDialog = false
             }
         )
     }
 
-    // Delete confirmation dialog
-    itemToDelete?.let { item ->
+    // Dialog: Delete Menu Confirmation
+    menuItemToDelete?.let { item ->
         AlertDialog(
-            onDismissRequest = { itemToDelete = null },
+            onDismissRequest = { menuItemToDelete = null },
             title = { Text(strings.hapusMenu) },
             text = { Text("${strings.konfirmasiHapusMenu}: ${item.name}?") },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.deleteMenuItem(item.id)
-                        itemToDelete = null
+                        menuItemToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -393,7 +707,66 @@ fun MenuScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { itemToDelete = null }) {
+                TextButton(onClick = { menuItemToDelete = null }) {
+                    Text(strings.batal)
+                }
+            }
+        )
+    }
+
+    // Dialog: Add / Edit Lapak
+    if (showAddEditStallDialog) {
+        AddEditStallFullDialog(
+            stall = editingStall,
+            activeMenus = activeMenus,
+            allPrices = allPrices,
+            strings = strings,
+            onDismiss = { showAddEditStallDialog = false },
+            onSave = { name, address, notes, photoUri, initialPrices ->
+                if (editingStall != null) {
+                    viewModel.updateStall(
+                        editingStall!!.copy(
+                            name = name,
+                            address = address,
+                            notes = notes,
+                            photoUri = photoUri
+                        )
+                    )
+                    // Also save prices
+                    initialPrices.forEach { (menuId, p) ->
+                        viewModel.setStallPrice(editingStall!!.id, menuId, p)
+                    }
+                } else {
+                    viewModel.addStall(name, address, notes, photoUri) { newStallId ->
+                        initialPrices.forEach { (menuId, p) ->
+                            viewModel.setStallPrice(newStallId, menuId, p)
+                        }
+                    }
+                }
+                showAddEditStallDialog = false
+            }
+        )
+    }
+
+    // Dialog: Delete Stall Confirmation
+    stallToDelete?.let { stall ->
+        AlertDialog(
+            onDismissRequest = { stallToDelete = null },
+            title = { Text(strings.hapusLapak) },
+            text = { Text("${strings.konfirmasiHapusLapak}: ${stall.name}?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteStall(stall.id)
+                        stallToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.hapus)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { stallToDelete = null }) {
                     Text(strings.batal)
                 }
             }
@@ -401,6 +774,498 @@ fun MenuScreen(
     }
 }
 
+/**
+ * Card component for displaying a Lapak with its full product price list.
+ * Allows sellers to view and directly customize the selling price of each product for this stall.
+ */
+@Composable
+fun StallWithMenuPricesCard(
+    stall: StallEntity,
+    activeMenus: List<MenuItemEntity>,
+    allPrices: List<StallMenuPriceEntity>,
+    strings: com.example.model.AppStrings,
+    onEditStall: () -> Unit,
+    onDeleteStall: () -> Unit,
+    onToggleActive: () -> Unit,
+    onSavePrice: (menuId: Long, newPrice: Double) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("stall_full_card_${stall.id}")
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Stall Header: Photo/Avatar, Name, Address, Active toggle, Edit, Delete
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (!stall.photoUri.isNullOrBlank() && File(stall.photoUri).exists()) {
+                    AsyncImage(
+                        model = File(stall.photoUri),
+                        contentDescription = stall.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                    )
+                } else {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (stall.isActive) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Storefront,
+                            contentDescription = null,
+                            tint = if (stall.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stall.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = if (stall.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
+                    )
+                    if (stall.address.isNotBlank()) {
+                        Text(
+                            text = stall.address,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = if (stall.isActive) strings.aktif else strings.nonaktif,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (stall.isActive) StatusGreen else MaterialTheme.colorScheme.outline
+                    )
+                }
+
+                // Active toggle switch
+                Switch(
+                    checked = stall.isActive,
+                    onCheckedChange = { onToggleActive() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+
+                // Edit stall button
+                IconButton(
+                    onClick = onEditStall,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = strings.editLapak,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                // Delete stall button
+                IconButton(
+                    onClick = onDeleteStall,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = strings.hapusLapak,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Sub-Section: Harga Produk di Lapak Ini
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    .padding(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Harga Produk di ${stall.name}:",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Otomatis digunakan saat setoran",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (activeMenus.isEmpty()) {
+                    Text(
+                        text = "Belum ada menu makanan aktif. Tambahkan menu di tab Daftar Menu terlebih dahulu.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    activeMenus.forEach { menu ->
+                        val savedPriceEntity = allPrices.find { it.stallId == stall.id && it.menuId == menu.id }
+                        val currentPrice = savedPriceEntity?.price ?: menu.price
+
+                        ProductPriceRowInStall(
+                            menu = menu,
+                            savedPrice = currentPrice,
+                            onSave = { newPrice ->
+                                onSavePrice(menu.id, newPrice)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Individual product price row inside a Stall card with instant formatted editing and saving.
+ */
+@Composable
+fun ProductPriceRowInStall(
+    menu: MenuItemEntity,
+    savedPrice: Double,
+    onSave: (Double) -> Unit
+) {
+    var priceDigits by remember(savedPrice) {
+        mutableStateOf(savedPrice.toLong().toString())
+    }
+    var isDirty by remember(savedPrice) { mutableStateOf(false) }
+
+    val currentAmount = priceDigits.toDoubleOrNull() ?: 0.0
+    val margin = (currentAmount - menu.hpp).coerceAtLeast(0.0)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = menu.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "HPP: ${FormatUtils.formatRupiah(menu.hpp)} | Laba: ${FormatUtils.formatRupiah(margin)}",
+                fontSize = 10.sp,
+                color = if (margin > 0) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Price Input
+        OutlinedTextField(
+            value = if (priceDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmount),
+            onValueChange = { input ->
+                val digits = input.filter { it.isDigit() }
+                priceDigits = digits
+                isDirty = true
+            },
+            prefix = { Text("Rp ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+            placeholder = { Text("0", fontSize = 11.sp) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier = Modifier
+                .width(130.dp)
+                .height(48.dp)
+                .testTag("input_stall_price_${menu.id}")
+        )
+
+        Spacer(modifier = Modifier.width(6.dp))
+
+        // Save Price Button
+        Button(
+            onClick = {
+                val p = priceDigits.toDoubleOrNull() ?: 0.0
+                if (p > 0) {
+                    onSave(p)
+                    isDirty = false
+                }
+            },
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isDirty) MaterialTheme.colorScheme.primary else StatusGreen
+            ),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+            modifier = Modifier
+                .height(38.dp)
+                .testTag("btn_save_price_${menu.id}")
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Simpan",
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Dialog for Adding / Editing a Stall along with initial prices for all active menus.
+ */
+@Composable
+fun AddEditStallFullDialog(
+    stall: StallEntity?,
+    activeMenus: List<MenuItemEntity>,
+    allPrices: List<StallMenuPriceEntity>,
+    strings: com.example.model.AppStrings,
+    onDismiss: () -> Unit,
+    onSave: (name: String, address: String, notes: String, photoUri: String?, initialPrices: Map<Long, Double>) -> Unit
+) {
+    val context = LocalContext.current
+    var name by remember { mutableStateOf(stall?.name ?: "") }
+    var address by remember { mutableStateOf(stall?.address ?: "") }
+    var notes by remember { mutableStateOf(stall?.notes ?: "") }
+    var stallPhotoUri by remember { mutableStateOf(stall?.photoUri) }
+
+    // Map of menuId -> price digits
+    val priceMap = remember { mutableStateMapOf<Long, String>() }
+
+    LaunchedEffect(stall, activeMenus) {
+        activeMenus.forEach { m ->
+            val p = if (stall != null) {
+                allPrices.find { it.stallId == stall.id && it.menuId == m.id }?.price ?: m.price
+            } else {
+                m.price
+            }
+            if (!priceMap.containsKey(m.id)) {
+                priceMap[m.id] = p.toLong().toString()
+            }
+        }
+    }
+
+    val pickPhotoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val saved = ImageStorageHelper.saveImageLocally(context, uri, "stall")
+            if (saved != null) stallPhotoUri = saved
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = if (stall == null) "Tambah Lapak Baru" else "Edit Lapak",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Photo Section
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(10.dp)
+                    ) {
+                        if (!stallPhotoUri.isNullOrBlank() && File(stallPhotoUri!!).exists()) {
+                            AsyncImage(
+                                model = File(stallPhotoUri!!),
+                                contentDescription = "Foto Lapak",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp))
+                            )
+                        } else {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AddPhotoAlternate,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Foto Lapak (Opsional)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        pickPhotoLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(34.dp)
+                                ) {
+                                    Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(if (stallPhotoUri == null) "Pilih Foto" else "Ganti", fontSize = 12.sp)
+                                }
+
+                                if (stallPhotoUri != null) {
+                                    OutlinedButton(
+                                        onClick = { stallPhotoUri = null },
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(34.dp)
+                                    ) {
+                                        Text("Hapus", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Nama Lapak
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(strings.namaLapakLabel) },
+                    placeholder = { Text("Contoh: Tamba Rejo, Tugu Gajah") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("dialog_stall_name_field")
+                )
+
+                // Alamat Lapak
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text(strings.alamatLapak) },
+                    placeholder = { Text("Lokasi / Jalan lapak...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("dialog_stall_address_field")
+                )
+
+                // Catatan
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Catatan Lapak (Opsional)") },
+                    placeholder = { Text("Nama penjaga, jam buka, dll...") },
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Setting harga produk untuk lapak ini
+                if (activeMenus.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Atur Harga Jual Produk di Lapak Ini:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    activeMenus.forEach { menu ->
+                        val currentDigits = priceMap[menu.id] ?: menu.price.toLong().toString()
+                        val currentAmt = currentDigits.toDoubleOrNull() ?: menu.price
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = menu.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(text = "Standar: ${FormatUtils.formatRupiah(menu.price)}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            OutlinedTextField(
+                                value = if (currentDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmt),
+                                onValueChange = { str ->
+                                    val digits = str.filter { it.isDigit() }
+                                    priceMap[menu.id] = digits
+                                },
+                                prefix = { Text("Rp ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.width(135.dp).height(48.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        val parsedPrices = priceMap.mapValues {
+                            it.value.toDoubleOrNull() ?: 10000.0
+                        }
+                        onSave(name.trim(), address.trim(), notes.trim(), stallPhotoUri, parsedPrices)
+                    }
+                },
+                modifier = Modifier.testTag("dialog_stall_confirm_btn")
+            ) {
+                Text(strings.simpan)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.batal)
+            }
+        }
+    )
+}
+
+/**
+ * Full Add/Edit Menu Dialog with direct Lapak prices configuration.
+ */
 @Composable
 fun AddEditMenuFullDialog(
     item: MenuItemEntity?,
@@ -419,11 +1284,6 @@ fun AddEditMenuFullDialog(
     var defaultPriceDigits by remember { mutableStateOf(item?.price?.toLong()?.toString() ?: "10000") }
     var menuPhotoUri by remember { mutableStateOf(item?.photoUri) }
 
-    // Sub-dialog states for managing stalls right from here!
-    var editingStallTarget by remember { mutableStateOf<StallEntity?>(null) }
-    var showCreateStallDialog by remember { mutableStateOf(false) }
-
-    // Map of stallId -> digits string
     val stallPriceMap = remember { mutableStateMapOf<Long, String>() }
 
     LaunchedEffect(item, stalls) {
@@ -431,7 +1291,7 @@ fun AddEditMenuFullDialog(
             val existingP = if (item != null) {
                 allPrices.find { it.stallId == s.id && it.menuId == item.id }?.price ?: item.price
             } else {
-                10000.0
+                defaultPriceDigits.toDoubleOrNull() ?: 10000.0
             }
             if (!stallPriceMap.containsKey(s.id)) {
                 stallPriceMap[s.id] = existingP.toLong().toString()
@@ -439,7 +1299,6 @@ fun AddEditMenuFullDialog(
         }
     }
 
-    // Photo picker for menu photo (Zero permissions via Android Photo Picker)
     val pickMenuPhotoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
@@ -467,7 +1326,7 @@ fun AddEditMenuFullDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 1. Upload Foto Menu Section
+                // Photo Section
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
@@ -546,7 +1405,7 @@ fun AddEditMenuFullDialog(
                     }
                 }
 
-                // 2. Nama Makanan
+                // Nama Makanan
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -556,7 +1415,7 @@ fun AddEditMenuFullDialog(
                     modifier = Modifier.fillMaxWidth().testTag("dialog_menu_name_input")
                 )
 
-                // 3. Satuan
+                // Satuan
                 OutlinedTextField(
                     value = unit,
                     onValueChange = { unit = it },
@@ -566,7 +1425,7 @@ fun AddEditMenuFullDialog(
                     modifier = Modifier.fillMaxWidth().testTag("dialog_menu_unit_input")
                 )
 
-                // 4. HPP (Harga Pokok Produksi / Biaya Modal) - dengan format titik
+                // HPP Modal
                 val hppAmount = hppDigits.toDoubleOrNull() ?: 0.0
                 OutlinedTextField(
                     value = if (hppDigits.isEmpty()) "" else FormatUtils.formatNumber(hppAmount),
@@ -582,7 +1441,7 @@ fun AddEditMenuFullDialog(
                     modifier = Modifier.fillMaxWidth().testTag("dialog_menu_hpp_input")
                 )
 
-                // 5. Harga Jual Standar (Default)
+                // Harga Standar
                 val defAmount = defaultPriceDigits.toDoubleOrNull() ?: 0.0
                 OutlinedTextField(
                     value = if (defaultPriceDigits.isEmpty()) "" else FormatUtils.formatNumber(defAmount),
@@ -598,146 +1457,41 @@ fun AddEditMenuFullDialog(
                     modifier = Modifier.fillMaxWidth().testTag("dialog_menu_default_price_input")
                 )
 
-                // 6. Section: Lapak & Harga Khusus
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Lapak & Harga Khusus",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = if (stalls.isEmpty()) "Belum ada lapak terdaftar:" else "Atur harga khusus untuk lapak:",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                // Lapak & Harga Khusus
+                if (stalls.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Harga Jual di Masing-masing Lapak:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                    // Button: Tambah Lapak Baru langsung dari sini!
-                    Button(
-                        onClick = { showCreateStallDialog = true },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                        modifier = Modifier.height(32.dp).testTag("dialog_btn_add_stall")
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("+ Tambah Lapak", fontSize = 11.sp)
-                    }
-                }
-
-                if (stalls.isEmpty()) {
-                    Card(
-                        shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth().padding(14.dp)
-                        ) {
-                            Text(
-                                text = "Belum ada lapak. Klik tombol '+ Tambah Lapak' di atas untuk membuat lapak baru.",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
                     stalls.forEach { stall ->
-                        Card(
-                            shape = RoundedCornerShape(10.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                        val priceRaw = stallPriceMap[stall.id] ?: defaultPriceDigits
+                        val priceAmount = priceRaw.toDoubleOrNull() ?: defAmount
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp, vertical = 8.dp)
-                            ) {
-                                // Stall photo or icon
-                                if (!stall.photoUri.isNullOrBlank() && File(stall.photoUri).exists()) {
-                                    AsyncImage(
-                                        model = File(stall.photoUri),
-                                        contentDescription = stall.name,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                    )
-                                } else {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Storefront,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                // Stall Name + Edit Button
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = stall.name,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        IconButton(
-                                            onClick = { editingStallTarget = stall },
-                                            modifier = Modifier.size(28.dp).testTag("edit_stall_${stall.id}")
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Edit,
-                                                contentDescription = "Edit Nama Lapak",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(15.dp)
-                                            )
-                                        }
-                                    }
-                                    if (stall.address.isNotBlank()) {
-                                        Text(
-                                            text = stall.address,
-                                            fontSize = 10.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                // Price text field with dot thousand separator
-                                val priceRaw = stallPriceMap[stall.id] ?: ""
-                                val priceAmount = priceRaw.toDoubleOrNull() ?: 0.0
-                                OutlinedTextField(
-                                    value = if (priceRaw.isEmpty()) "" else FormatUtils.formatNumber(priceAmount),
-                                    onValueChange = { str ->
-                                        val digits = str.filter { it.isDigit() }
-                                        stallPriceMap[stall.id] = digits
-                                    },
-                                    prefix = { Text("Rp ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                    placeholder = { Text("0", fontSize = 11.sp) },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    singleLine = true,
-                                    modifier = Modifier.width(135.dp).testTag("dialog_price_stall_${stall.id}")
-                                )
-                            }
+                            Text(
+                                text = stall.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = if (priceRaw.isEmpty()) "" else FormatUtils.formatNumber(priceAmount),
+                                onValueChange = { str ->
+                                    val digits = str.filter { it.isDigit() }
+                                    stallPriceMap[stall.id] = digits
+                                },
+                                prefix = { Text("Rp ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.width(135.dp).height(48.dp)
+                            )
                         }
                     }
                 }
@@ -763,263 +1517,6 @@ fun AddEditMenuFullDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(strings.batal)
-            }
-        }
-    )
-
-    // Sub-dialog: Edit Nama Lapak & Foto Lapak
-    editingStallTarget?.let { targetStall ->
-        EditStallDialog(
-            stall = targetStall,
-            onDismiss = { editingStallTarget = null },
-            onSave = { newName, newPhotoUri ->
-                onUpdateStallNameAndPhoto(targetStall.id, newName, newPhotoUri)
-                editingStallTarget = null
-            }
-        )
-    }
-
-    // Sub-dialog: Tambah Lapak Baru
-    if (showCreateStallDialog) {
-        CreateStallDialog(
-            onDismiss = { showCreateStallDialog = false },
-            onSave = { stallName, stallAddress, stallNotes, photoUri ->
-                onAddNewStall(stallName, stallAddress, stallNotes, photoUri) { newStallId ->
-                    // Set default price for new stall
-                    val defP = defaultPriceDigits.toDoubleOrNull() ?: 10000.0
-                    stallPriceMap[newStallId] = defP.toLong().toString()
-                }
-                showCreateStallDialog = false
-            }
-        )
-    }
-}
-
-@Composable
-fun EditStallDialog(
-    stall: StallEntity,
-    onDismiss: () -> Unit,
-    onSave: (newName: String, newPhotoUri: String?) -> Unit
-) {
-    val context = LocalContext.current
-    var stallName by remember { mutableStateOf(stall.name) }
-    var stallPhotoUri by remember { mutableStateOf(stall.photoUri) }
-
-    val pickStallPhotoLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val savedPath = ImageStorageHelper.saveImageLocally(context, uri, "stall")
-            if (savedPath != null) {
-                stallPhotoUri = savedPath
-            }
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit Nama & Foto Lapak", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Foto Lapak Section
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (!stallPhotoUri.isNullOrBlank() && File(stallPhotoUri!!).exists()) {
-                        AsyncImage(
-                            model = File(stallPhotoUri!!),
-                            contentDescription = "Foto Lapak",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
-                        )
-                    } else {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Store,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Button(
-                            onClick = {
-                                pickStallPhotoLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            modifier = Modifier.height(34.dp)
-                        ) {
-                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (stallPhotoUri == null) "Foto Lapak" else "Ganti Foto", fontSize = 12.sp)
-                        }
-
-                        if (stallPhotoUri != null) {
-                            TextButton(
-                                onClick = { stallPhotoUri = null },
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
-                            ) {
-                                Text("Hapus Foto", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
-                    }
-                }
-
-                OutlinedTextField(
-                    value = stallName,
-                    onValueChange = { stallName = it },
-                    label = { Text("Nama Lapak") },
-                    placeholder = { Text("Contoh: Lapak A, Lapak Simpang 5") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (stallName.isNotBlank()) {
-                        onSave(stallName.trim(), stallPhotoUri)
-                    }
-                }
-            ) {
-                Text("Simpan")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal")
-            }
-        }
-    )
-}
-
-@Composable
-fun CreateStallDialog(
-    onDismiss: () -> Unit,
-    onSave: (name: String, address: String, notes: String, photoUri: String?) -> Unit
-) {
-    val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
-    var photoUri by remember { mutableStateOf<String?>(null) }
-
-    val pickPhotoLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val savedPath = ImageStorageHelper.saveImageLocally(context, uri, "stall")
-            if (savedPath != null) {
-                photoUri = savedPath
-            }
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Tambah Lapak Baru", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (!photoUri.isNullOrBlank() && File(photoUri!!).exists()) {
-                        AsyncImage(
-                            model = File(photoUri!!),
-                            contentDescription = "Foto Lapak",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                    } else {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        ) {
-                            Icon(Icons.Default.Storefront, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Button(
-                        onClick = {
-                            pickPhotoLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        modifier = Modifier.height(34.dp)
-                    ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (photoUri == null) "+ Foto Lapak" else "Ganti Foto", fontSize = 11.sp)
-                    }
-                }
-
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Nama Lapak") },
-                    placeholder = { Text("Contoh: Lapak D, Lapak Pasar Baru") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = { address = it },
-                    label = { Text("Alamat / Lokasi (Opsional)") },
-                    placeholder = { Text("Contoh: Blok B No. 12") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (name.isNotBlank()) {
-                        onSave(name.trim(), address.trim(), notes.trim(), photoUri)
-                    }
-                }
-            ) {
-                Text("Tambah")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal")
             }
         }
     )

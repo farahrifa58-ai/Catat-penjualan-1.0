@@ -98,7 +98,7 @@ fun AppTopBar(
                         ScreenDestination.SETORAN -> "Catat Setoran"
                         ScreenDestination.PENJUALAN -> "Input Penjualan"
                         ScreenDestination.RIWAYAT -> "Riwayat & Laporan"
-                        ScreenDestination.MENU -> "Daftar Menu Makanan"
+                        ScreenDestination.MENU -> "Menu & Lapak"
                         ScreenDestination.LAPAK -> "Daftar Lapak"
                         ScreenDestination.ATUR_HARGA -> "Pengaturan Harga Lapak"
                         ScreenDestination.BERANDA -> "Catat Jualan"
@@ -108,9 +108,9 @@ fun AppTopBar(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = if (com.example.util.AppConfig.IS_TRIAL) "File APK: Versi Trial (30-40 Menit)" else "File APK: Full Version",
+                    text = if (com.example.util.AppConfig.IS_TRIAL) "File APK: Versi Trial (Batas 30 Menit)" else "File APK: Full Version (Permanen)",
                     fontSize = 11.sp,
-                    color = androidx.compose.ui.graphics.Color(0xFFD32F2F),
+                    color = if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFD32F2F) else androidx.compose.ui.graphics.Color(0xFF2E7D32),
                     fontWeight = FontWeight.Bold
                 )
             }

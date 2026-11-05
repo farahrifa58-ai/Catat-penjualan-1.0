@@ -11,8 +11,7 @@ object AppConfig {
     var IS_TRIAL: Boolean = false
 
     const val DEVELOPER_EMAIL: String = "rendykurniawan0311@gmail.com"
-    const val TRIAL_SOFT_LIMIT_MINUTES: Long = 30 // Warning stage
-    const val TRIAL_HARD_LIMIT_MINUTES: Long = 40 // Block/Lock stage
+    const val TRIAL_LIMIT_MINUTES: Long = 30 // Exactly 30 minutes as requested
 
     private const val PREFS_NAME = "catat_jualan_trial_prefs"
     private const val KEY_FIRST_LAUNCH = "trial_first_launch_timestamp"
@@ -38,12 +37,12 @@ object AppConfig {
 
     fun isTrialExpired(context: Context): Boolean {
         if (!IS_TRIAL) return false
-        return getElapsedMinutes(context) >= TRIAL_HARD_LIMIT_MINUTES
+        return getElapsedMinutes(context) >= TRIAL_LIMIT_MINUTES
     }
 
     fun isTrialWarning(context: Context): Boolean {
         if (!IS_TRIAL) return false
         val elapsed = getElapsedMinutes(context)
-        return elapsed in TRIAL_SOFT_LIMIT_MINUTES until TRIAL_HARD_LIMIT_MINUTES
+        return elapsed in (TRIAL_LIMIT_MINUTES - 5) until TRIAL_LIMIT_MINUTES
     }
 }

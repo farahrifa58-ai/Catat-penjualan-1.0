@@ -23,17 +23,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -61,7 +66,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.model.AppLanguage
 import com.example.model.DepositWithDetails
-import com.example.model.PaymentStatus
 import com.example.model.ReportSummary
 import com.example.ui.components.PaymentStatusChip
 import com.example.ui.components.StatCard
@@ -154,71 +158,139 @@ fun HistoryScreen(
             )
         }
 
-        // Stall Filter Horizontal Chips (Section F: Filter Semua Lapak / Lapak Tertentu)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        // Filter Bar Container
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(top = 8.dp, bottom = 4.dp)
         ) {
-            FilterChip(
-                selected = selectedStallId == null,
-                onClick = { selectedStallId = null },
-                label = { Text(strings.semuaLapak, fontSize = 12.sp) }
-            )
-            allStalls.forEach { stall ->
+            // Row 1: Stall Filter Horizontal Chips (Smooth Horizontal Scroll)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 2.dp)
+            ) {
                 FilterChip(
-                    selected = selectedStallId == stall.id,
-                    onClick = { selectedStallId = stall.id },
-                    label = { Text(stall.name, fontSize = 12.sp) }
+                    selected = selectedStallId == null,
+                    onClick = { selectedStallId = null },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Store,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    label = { Text(strings.semuaLapak, fontSize = 12.sp, fontWeight = if (selectedStallId == null) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+                allStalls.forEach { stall ->
+                    FilterChip(
+                        selected = selectedStallId == stall.id,
+                        onClick = { selectedStallId = stall.id },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Storefront,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        label = { Text(stall.name, fontSize = 12.sp, fontWeight = if (selectedStallId == stall.id) FontWeight.Bold else FontWeight.Normal) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+
+            // Row 2: Date Filter Horizontal Chips (Smooth Horizontal Scroll to prevent squishing)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                FilterChip(
+                    selected = filterType == HistoryFilter.ALL,
+                    onClick = { filterType = HistoryFilter.ALL },
+                    leadingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(strings.filterSemua, fontSize = 12.sp, fontWeight = if (filterType == HistoryFilter.ALL) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                )
+                FilterChip(
+                    selected = filterType == HistoryFilter.TODAY,
+                    onClick = { filterType = HistoryFilter.TODAY },
+                    leadingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(strings.filterHariIni, fontSize = 12.sp, fontWeight = if (filterType == HistoryFilter.TODAY) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                )
+                FilterChip(
+                    selected = filterType == HistoryFilter.WEEK,
+                    onClick = { filterType = HistoryFilter.WEEK },
+                    leadingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(strings.filterMingguIni, fontSize = 12.sp, fontWeight = if (filterType == HistoryFilter.WEEK) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                )
+                FilterChip(
+                    selected = filterType == HistoryFilter.MONTH,
+                    onClick = { filterType = HistoryFilter.MONTH },
+                    leadingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(strings.filterBulanIni, fontSize = 12.sp, fontWeight = if (filterType == HistoryFilter.MONTH) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 )
             }
-        }
-
-        // Date Filter chips bar
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-        ) {
-            FilterChip(
-                selected = filterType == HistoryFilter.ALL,
-                onClick = { filterType = HistoryFilter.ALL },
-                label = { Text(strings.filterSemua, fontSize = 12.sp) }
-            )
-            FilterChip(
-                selected = filterType == HistoryFilter.TODAY,
-                onClick = { filterType = HistoryFilter.TODAY },
-                label = { Text(strings.filterHariIni, fontSize = 12.sp) }
-            )
-            FilterChip(
-                selected = filterType == HistoryFilter.WEEK,
-                onClick = { filterType = HistoryFilter.WEEK },
-                label = { Text(strings.filterMingguIni, fontSize = 12.sp) }
-            )
-            FilterChip(
-                selected = filterType == HistoryFilter.MONTH,
-                onClick = { filterType = HistoryFilter.MONTH },
-                label = { Text(strings.filterBulanIni, fontSize = 12.sp) }
-            )
         }
 
         if (selectedTab == 0) {
             // === TAB 1: RIWAYAT TRANSAKSI ===
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Search Field
                 item {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         placeholder = { Text(strings.cariLapak, fontSize = 13.sp) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary) },
+                        trailingIcon = {
+                            if (searchQuery.isNotBlank()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear search", modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        },
                         singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("history_search_field")
@@ -230,20 +302,45 @@ fun HistoryScreen(
                         Card(
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 16.dp)
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(24.dp)
+                                    .padding(32.dp)
                             ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text(
+                                    text = "Belum Ada Riwayat Transaksi",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = strings.tidakAdaAktivitas,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
                         }
@@ -263,8 +360,8 @@ fun HistoryScreen(
             // === TAB 2: LAPORAN USAHA & MULTI-LAPAK ===
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Export CSV action
                 item {
@@ -273,15 +370,22 @@ fun HistoryScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = if (selectedStallId != null) {
-                                val sName = allStalls.find { it.id == selectedStallId }?.name ?: ""
-                                "Laporan: $sName"
-                            } else strings.tabLaporan,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                        Column {
+                            Text(
+                                text = if (selectedStallId != null) {
+                                    val sName = allStalls.find { it.id == selectedStallId }?.name ?: ""
+                                    "Laporan: $sName"
+                                } else strings.tabLaporan,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "${filteredDeposits.size} transaksi terfilter",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
                         OutlinedButton(
                             onClick = {
@@ -294,29 +398,30 @@ fun HistoryScreen(
                                 val shareIntent = Intent.createChooser(sendIntent, strings.bagikanLaporan)
                                 context.startActivity(shareIntent)
                             },
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                             modifier = Modifier.testTag("report_export_csv_button")
                         ) {
                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(strings.eksporCsv, fontSize = 12.sp)
+                            Text(strings.eksporCsv, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
 
                 // Summary Numbers Grid
                 item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         StatCard(
                             title = strings.totalDikirim,
-                            value = "${reportSummary.totalSent}",
+                            value = "${reportSummary.totalSent} item",
                             icon = Icons.Default.History,
                             iconTint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             title = strings.totalTerjual,
-                            value = "${reportSummary.totalSold}",
+                            value = "${reportSummary.totalSold} item",
                             icon = Icons.Default.Assessment,
                             iconTint = StatusGreen,
                             modifier = Modifier.weight(1f)
@@ -325,7 +430,7 @@ fun HistoryScreen(
                 }
 
                 item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         StatCard(
                             title = strings.totalOmzet,
                             value = FormatUtils.formatRupiah(reportSummary.totalRevenue),
@@ -344,7 +449,7 @@ fun HistoryScreen(
                 }
 
                 item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         StatCard(
                             title = strings.sisaPiutang,
                             value = FormatUtils.formatRupiah(reportSummary.totalReceivable),
@@ -369,7 +474,7 @@ fun HistoryScreen(
                         Text(
                             text = strings.laporanPerLapak,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
+                            fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -391,7 +496,7 @@ fun HistoryScreen(
                                         Box(
                                             contentAlignment = Alignment.Center,
                                             modifier = Modifier
-                                                .size(34.dp)
+                                                .size(36.dp)
                                                 .clip(CircleShape)
                                                 .background(MaterialTheme.colorScheme.primaryContainer)
                                         ) {
@@ -399,7 +504,7 @@ fun HistoryScreen(
                                                 Icons.Default.Storefront,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                         Spacer(modifier = Modifier.width(10.dp))
@@ -447,10 +552,10 @@ fun HistoryScreen(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = "${strings.menuTerlarisPerLapak}: ${stallPerf.topMenuName}",
-                                    fontSize = 11.sp,
+                                    fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -535,20 +640,21 @@ fun HistoryScreen(
                     }
                 }
 
-                // Best Selling Foods & Most Leftover Foods Lists
+                // Best Selling Foods
                 item {
                     Text(
                         text = strings.menuTerlaris,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
-                items(reportSummary.bestSellingItems.take(3)) { perf ->
+                items(reportSummary.bestSellingItems.take(5)) { perf ->
                     Card(
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -589,7 +695,7 @@ fun HistoryItemCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = modifier
@@ -597,55 +703,144 @@ fun HistoryItemCard(
             .clickable { onClick() }
             .testTag("history_item_card_${deposit.deposit.id}")
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = if (deposit.deposit.stallName.isNotBlank()) deposit.deposit.stallName else "Setoran Lapak",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    PaymentStatusChip(status = deposit.paymentStatus, strings = strings)
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Header: Lapak Name + Payment Status Badge
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Storefront,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = if (deposit.deposit.stallName.isNotBlank()) deposit.deposit.stallName else "Setoran Lapak",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = FormatUtils.formatDateDisplay(deposit.deposit.date, isEnglish),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
-                Text(
-                    text = FormatUtils.formatDateDisplay(deposit.deposit.date, isEnglish),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Kirim: ${deposit.totalSent} | Jual: ${deposit.totalSold} | Sisa: ${deposit.totalRemaining}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = "Tagihan: ${FormatUtils.formatRupiah(deposit.totalBill)} • Dibayar: ${FormatUtils.formatRupiah(deposit.totalPaid)}",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                PaymentStatusChip(status = deposit.paymentStatus, strings = strings)
             }
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 3-Column Pill Box: Kirim | Terjual | Sisa
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(vertical = 6.dp, horizontal = 4.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Kirim", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(text = "${deposit.totalSent}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(StatusGreen.copy(alpha = 0.12f))
+                        .padding(vertical = 6.dp, horizontal = 4.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Terjual", fontSize = 10.sp, color = StatusGreen, fontWeight = FontWeight.SemiBold)
+                        Text(text = "${deposit.totalSold}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = StatusGreen)
+                    }
+                }
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(StatusAmber.copy(alpha = 0.14f))
+                        .padding(vertical = 6.dp, horizontal = 4.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Sisa", fontSize = 10.sp, color = StatusAmber, fontWeight = FontWeight.SemiBold)
+                        Text(text = "${deposit.totalRemaining}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = StatusAmber)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Financial Summary Bar & Arrow
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Tagihan: ${FormatUtils.formatRupiah(deposit.totalBill)}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Dibayar: ${FormatUtils.formatRupiah(deposit.totalPaid)}" +
+                                if (deposit.remainingBill > 0) " • Piutang: ${FormatUtils.formatRupiah(deposit.remainingBill)}" else " • Lunas",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (deposit.remainingBill > 0) StatusRed else StatusGreen
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "Detail", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Detail",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }

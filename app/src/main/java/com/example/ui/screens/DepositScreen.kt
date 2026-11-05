@@ -1,8 +1,10 @@
 package com.example.ui.screens
 
 import android.app.DatePickerDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,13 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Remove
@@ -34,9 +37,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -77,7 +77,6 @@ data class DraftDepositItem(
     var quantitySent: Int
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DepositScreen(
     viewModel: MainViewModel,
@@ -93,7 +92,6 @@ fun DepositScreen(
 
     var dateText by remember { mutableStateOf(FormatUtils.getTodayDateIso()) }
     var selectedStall by remember { mutableStateOf<StallEntity?>(null) }
-    var stallDropdownOpen by remember { mutableStateOf(false) }
     var notes by remember { mutableStateOf("") }
 
     // Draft items list
@@ -128,6 +126,17 @@ fun DepositScreen(
                         quantitySent = initialQty
                     )
                 )
+            }
+        } else if (stall != null && draftItems.isNotEmpty()) {
+            // Automatically update price for all items to match this stall's configured price!
+            draftItems.forEachIndexed { i, item ->
+                if (item.menuId != null) {
+                    val sp = allStallPrices.find { it.stallId == stall.id && it.menuId == item.menuId }?.price
+                        ?: activeMenus.find { it.id == item.menuId }?.price
+                    if (sp != null && sp != item.priceSnapshot) {
+                        draftItems[i] = item.copy(priceSnapshot = sp)
+                    }
+                }
             }
         }
     }
@@ -185,103 +194,143 @@ fun DepositScreen(
                                 Icon(Icons.Default.CalendarToday, contentDescription = "Pick Date")
                             }
                         },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { datePickerDialog.show() }
                             .testTag("deposit_form_date")
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Stall Selector Dropdown (Mandatory per Section C)
-                    Text(text = strings.namaLapak, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                .clickable { stallDropdownOpen = true }
-                                .padding(horizontal = 14.dp, vertical = 12.dp)
-                                .testTag("deposit_form_stall_picker")
+                    // === HORIZONTAL STALL SELECTOR (DAFTAR LAPAK KE SAMPING) ===
+                    Text(
+                        text = "Lapak Tujuan (Pilih Lapak):",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    if (activeStalls.isEmpty()) {
+                        Card(
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Storefront,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth().padding(12.dp)
+                            ) {
+                                Text(
+                                    text = "Belum ada lapak terdaftar.",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text(
-                                        text = selectedStall?.name ?: strings.namaLapakHint,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = if (selectedStall != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
-                                    )
-                                    selectedStall?.let {
-                                        if (it.address.isNotBlank()) {
-                                            Text(text = it.address, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                    }
+                                Button(
+                                    onClick = { viewModel.navigateTo(ScreenDestination.MENU) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("+ Tambah Lapak", fontSize = 11.sp)
                                 }
                             }
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                         }
-
-                        DropdownMenu(
-                            expanded = stallDropdownOpen,
-                            onDismissRequest = { stallDropdownOpen = false }
+                    } else {
+                        // Horizontal scrollable row of stall cards
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(vertical = 4.dp)
                         ) {
-                            if (activeStalls.isEmpty()) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = "Belum ada lapak. Tambah lapak di Menu",
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    onClick = {
-                                        stallDropdownOpen = false
-                                        viewModel.navigateTo(ScreenDestination.MENU)
-                                    }
-                                )
-                            } else {
-                                activeStalls.forEach { stall ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(text = stall.name, fontWeight = FontWeight.Bold)
-                                                if (stall.address.isNotBlank()) {
-                                                    Text(text = stall.address, fontSize = 11.sp)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
+                            activeStalls.forEach { stall ->
+                                val isSelected = selectedStall?.id == stall.id
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                    ),
+                                    border = BorderStroke(
+                                        width = if (isSelected) 2.dp else 1.dp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
                                             selectedStall = stall
-                                            stallDropdownOpen = false
-                                            // Update price snapshots for draft items to this stall's prices!
+                                            // Update price snapshots for all draft items to match this stall!
                                             draftItems.forEachIndexed { i, item ->
                                                 if (item.menuId != null) {
                                                     val sp = allStallPrices.find { it.stallId == stall.id && it.menuId == item.menuId }?.price
+                                                        ?: activeMenus.find { it.id == item.menuId }?.price
                                                     if (sp != null) {
                                                         draftItems[i] = item.copy(priceSnapshot = sp)
                                                     }
                                                 }
                                             }
                                         }
-                                    )
+                                        .testTag("stall_select_${stall.id}")
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                                )
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Storefront,
+                                                contentDescription = null,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = stall.name,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                if (isSelected) {
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Selected",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                            if (stall.address.isNotBlank()) {
+                                                Text(
+                                                    text = stall.address,
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Additional Notes
                     OutlinedTextField(
@@ -290,6 +339,7 @@ fun DepositScreen(
                         label = { Text(strings.catatanTambahan) },
                         placeholder = { Text(strings.catatanHint) },
                         maxLines = 2,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("deposit_form_notes")
@@ -301,7 +351,7 @@ fun DepositScreen(
         // Section: Total Makanan Dikirim (Card Banner yang rapi & jelas)
         item {
             Card(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -360,50 +410,82 @@ fun DepositScreen(
             }
         }
 
-        // List of items in draft
+        // List of items in draft (Redesigned: Clean, spacious, no squeezed price text!)
         items(draftItems, key = { "draft_${it.tempId}" }) { item ->
             val idx = draftItems.indexOf(item)
 
             Card(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("draft_item_${item.tempId}")
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    // Top row: Avatar, Food Name, and Delete Button
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Fastfood,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Fastfood,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = item.menuName,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
+                                fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                        }
+
+                        IconButton(
+                            onClick = { draftItems.remove(item) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Hapus Menu",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Bottom row: Price Badge (Left) and Stepper (Right)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Clean price badge with ample width
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
                             Text(
-                                text = "Harga Lapak: ${FormatUtils.formatRupiah(item.priceSnapshot)} / ${item.unit}",
+                                text = "Harga (${selectedStall?.name ?: "Lapak"}): ${FormatUtils.formatRupiah(item.priceSnapshot)} / ${item.unit}",
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -443,20 +525,6 @@ fun DepositScreen(
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = "Tambah", modifier = Modifier.size(16.dp))
                             }
-                        }
-
-                        Spacer(modifier = Modifier.width(6.dp))
-
-                        IconButton(
-                            onClick = { draftItems.remove(item) },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Hapus Menu",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(18.dp)
-                            )
                         }
                     }
 
