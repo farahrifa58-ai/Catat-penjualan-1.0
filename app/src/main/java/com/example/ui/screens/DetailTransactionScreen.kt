@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -316,18 +318,27 @@ fun DetailTransactionScreen(
                     )
 
                     if (item.remainingQty > 0) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
-                            Text(
-                                text = "Kondisi: Layak (${item.resaleableQty}), Rusak (${item.damagedQty}), Konsumsi (${item.selfConsumedQty})",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            ConditionStatusChip(isComplete = item.isConditionComplete, strings = strings)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Kondisi: Layak (${item.resaleableQty}), Rusak (${item.damagedQty}), Konsumsi (${item.selfConsumedQty})",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                                )
+                                ConditionStatusChip(isComplete = item.isConditionComplete, strings = strings)
+                            }
                         }
                     }
                 }
@@ -501,17 +512,38 @@ fun AddPaymentDialog(
                 )
 
                 Text(text = strings.metodePembayaran, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     listOf("Tunai", "Transfer", "QRIS").forEach { item ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 12.dp)
+                        val isSelected = method == item
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                                .border(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clickable { method = item }
+                                .padding(vertical = 10.dp, horizontal = 4.dp)
+                                .testTag("payment_method_$item")
                         ) {
-                            RadioButton(
-                                selected = method == item,
-                                onClick = { method = item }
+                            Text(
+                                text = item,
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                softWrap = false
                             )
-                            Text(text = item, fontSize = 13.sp)
                         }
                     }
                 }

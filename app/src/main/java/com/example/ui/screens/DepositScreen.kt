@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -110,12 +111,7 @@ fun DepositScreen(
         if (stall != null && draftItems.isEmpty() && activeMenus.isNotEmpty()) {
             activeMenus.forEachIndexed { index, m ->
                 val specificPrice = allStallPrices.find { it.stallId == stall.id && it.menuId == m.id }?.price ?: m.price
-                val initialQty = when (m.name.lowercase()) {
-                    "burger" -> 20
-                    "sandwich" -> 15
-                    "spaghetti" -> 20
-                    else -> 0
-                }
+                val initialQty = 0
                 draftItems.add(
                     DraftDepositItem(
                         tempId = index.toLong(),
@@ -474,28 +470,32 @@ fun DepositScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Clean price badge with ample width
+                        // Clean price badge with weight so it never pushes the stepper
                         Box(
                             modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .padding(horizontal = 8.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = "Harga (${selectedStall?.name ?: "Lapak"}): ${FormatUtils.formatRupiah(item.priceSnapshot)} / ${item.unit}",
+                                text = "Harga: ${FormatUtils.formatRupiah(item.priceSnapshot)} / ${item.unit}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
-                        // Stepper: - [Qty] +
+                        // Stepper: - [Qty] + (Fixed and always fully visible with clear contrast)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                .padding(horizontal = 2.dp, vertical = 2.dp)
                         ) {
                             IconButton(
                                 onClick = {
@@ -503,17 +503,23 @@ fun DepositScreen(
                                         draftItems[idx] = item.copy(quantitySent = item.quantitySent - 1)
                                     }
                                 },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(34.dp)
                             ) {
                                 Icon(Icons.Default.Remove, contentDescription = "Kurang", modifier = Modifier.size(16.dp))
                             }
 
-                            Text(
-                                text = "${item.quantitySent}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                            ) {
+                                Text(
+                                    text = "${item.quantitySent}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = if (item.quantitySent > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
 
                             IconButton(
                                 onClick = {
@@ -521,7 +527,7 @@ fun DepositScreen(
                                         draftItems[idx] = item.copy(quantitySent = item.quantitySent + 1)
                                     }
                                 },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(34.dp)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = "Tambah", modifier = Modifier.size(16.dp))
                             }
@@ -588,7 +594,7 @@ fun DepositScreen(
                                 val existing = draftItems.find { it.menuId == menu.id }
                                 if (existing != null) {
                                     val eIdx = draftItems.indexOf(existing)
-                                    draftItems[eIdx] = existing.copy(quantitySent = existing.quantitySent + 5)
+                                    draftItems[eIdx] = existing.copy(quantitySent = existing.quantitySent + 1)
                                 } else {
                                     draftItems.add(
                                         DraftDepositItem(
@@ -597,7 +603,7 @@ fun DepositScreen(
                                             menuName = menu.name,
                                             priceSnapshot = stallPrice,
                                             unit = menu.unit,
-                                            quantitySent = 10
+                                            quantitySent = 0
                                         )
                                     )
                                 }

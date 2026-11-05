@@ -88,7 +88,9 @@ fun ConditionStatusChip(
             text = label,
             color = textColor,
             fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }

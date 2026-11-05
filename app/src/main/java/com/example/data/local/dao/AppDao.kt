@@ -167,4 +167,35 @@ interface AppDao {
 
     @Query("DELETE FROM menu_items")
     suspend fun clearMenuItems()
+
+    // === Raw queries for Google Drive Backup & Restore ===
+    @Query("SELECT * FROM stalls")
+    suspend fun getAllStallsList(): List<StallEntity>
+
+    @Query("SELECT * FROM menu_items")
+    suspend fun getAllMenuItemsList(): List<MenuItemEntity>
+
+    @Query("SELECT * FROM stall_menu_prices")
+    suspend fun getAllStallPricesList(): List<StallMenuPriceEntity>
+
+    @Query("SELECT * FROM deposits")
+    suspend fun getAllDepositsList(): List<DepositEntity>
+
+    @Query("SELECT * FROM deposit_items")
+    suspend fun getAllDepositItemsList(): List<DepositItemEntity>
+
+    @Query("SELECT * FROM payments")
+    suspend fun getAllPaymentsList(): List<PaymentEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertStalls(stalls: List<StallEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMenuItems(items: List<MenuItemEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertDeposits(deposits: List<DepositEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPayments(payments: List<PaymentEntity>)
 }

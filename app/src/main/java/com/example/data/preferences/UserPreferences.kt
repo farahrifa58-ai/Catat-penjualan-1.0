@@ -22,6 +22,9 @@ class UserPreferences(context: Context) {
     private val _themeMode = MutableStateFlow(loadThemeMode())
     val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
 
+    private val _lastBackupTime = MutableStateFlow(prefs.getLong("last_backup_timestamp", 0L))
+    val lastBackupTime: StateFlow<Long> = _lastBackupTime.asStateFlow()
+
     private fun loadLanguage(): AppLanguage {
         val code = prefs.getString("selected_language", AppLanguage.INDONESIAN.code)
         return AppLanguage.entries.find { it.code == code } ?: AppLanguage.INDONESIAN
@@ -44,5 +47,10 @@ class UserPreferences(context: Context) {
     fun setThemeMode(mode: AppThemeMode) {
         prefs.edit().putString("selected_theme", mode.name).apply()
         _themeMode.value = mode
+    }
+
+    fun setLastBackupTime(timestamp: Long) {
+        prefs.edit().putLong("last_backup_timestamp", timestamp).apply()
+        _lastBackupTime.value = timestamp
     }
 }

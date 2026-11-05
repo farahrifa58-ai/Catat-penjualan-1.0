@@ -52,6 +52,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val language: StateFlow<AppLanguage> = preferences.language
     val themeMode: StateFlow<AppThemeMode> = preferences.themeMode
+    val lastBackupTime: StateFlow<Long> = preferences.lastBackupTime
 
     private val _currentScreen = MutableStateFlow(ScreenDestination.SPLASH)
     val currentScreen: StateFlow<ScreenDestination> = _currentScreen.asStateFlow()
@@ -397,14 +398,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // === Demo Data Seeding ===
-    fun loadDemoData() {
+    // === Google Drive Backup & Restore Operations ===
+    suspend fun exportBackupJson(): String {
+        return repository.createBackupJson()
+    }
+
+    fun recordBackupSuccess() {
+        preferences.setLastBackupTime(System.currentTimeMillis())
         viewModelScope.launch {
-            repository.loadDemoData(
-                todayDate = FormatUtils.getTodayDateIso(),
-                yesterdayDate = FormatUtils.getYesterdayDateIso()
-            )
-            _userMessage.emit(strings.dataKembaliKeAwal)
+            _userMessage.emit("Backup data berhasil disimpan")
+        }
+    }
+
+    fun restoreBackup(jsonString: String, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = repository.restoreFromBackupJson(jsonString)
+            if (success) {
+                _userMessage.emit("Data berhasil dipulihkan dari backup")
+            } else {
+                _userMessage.emit("Gagal memulihkan data: Format file tidak valid")
+            }
+            onComplete(success)
         }
     }
 }
