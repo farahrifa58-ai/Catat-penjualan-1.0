@@ -1,0 +1,6 @@
+{
+  "name": "Catat Jualan",
+  "description": "Aplikasi manajemen usaha kuliner untuk mencatat setoran lapak, hasil penjualan, sisa makanan, omzet, dan pembayaran harian.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
