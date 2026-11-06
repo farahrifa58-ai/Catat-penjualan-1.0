@@ -118,7 +118,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "🔴 File APK: Versi Trial (Batas Waktu 30-40 Menit)",
+                            text = "🔴 Versi Trial (Batas Waktu 1 Jam)",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = androidx.compose.ui.graphics.Color(0xFFD32F2F)

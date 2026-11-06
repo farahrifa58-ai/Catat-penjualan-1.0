@@ -77,14 +77,14 @@ fun TrialExpiredDialog() {
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Masa Uji Coba Selesai (30 Menit)",
+                    text = "Masa Uji Coba Selesai (1 Jam)",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "File APK: Versi Trial (Batas 30 Menit Selesai)",
+                    text = "Versi Trial (Batas Waktu 1 Jam Telah Berakhir)",
                     fontSize = 13.sp,
                     color = StatusRed,
                     fontWeight = FontWeight.Bold
@@ -98,7 +98,7 @@ fun TrialExpiredDialog() {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Waktu uji coba aplikasi Catat Jualan telah selesai (30 menit). Untuk terus menggunakan aplikasi dan membuka akses permanen tanpa batas waktu, silakan update ke Full Version dengan menghubungi email: $email",
+                    text = "Waktu uji coba aplikasi Catat Jualan telah selesai (1 jam). Untuk terus menggunakan aplikasi dan membuka akses penuh permanen tanpa batas waktu, silakan update ke Full Version dengan menghubungi email pengembang: $email",
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

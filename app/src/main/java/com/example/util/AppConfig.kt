@@ -5,13 +5,12 @@ import android.content.SharedPreferences
 
 object AppConfig {
     /**
-     * Set to true for Trial Version (30-40 min limit), false for Full Version.
-     * Can be switched when generating CatatJualan_Trial.apk vs CatatJualan_Full.apk.
+     * Set to true for Trial Version (1 hour limit), false for Full Version.
      */
     var IS_TRIAL: Boolean = false
 
     const val DEVELOPER_EMAIL: String = "rendykurniawan0311@gmail.com"
-    const val TRIAL_LIMIT_MINUTES: Long = 30 // Exactly 30 minutes as requested
+    const val TRIAL_LIMIT_MINUTES: Long = 60 // 1 Jam (60 minutes) as requested
 
     private const val PREFS_NAME = "catat_jualan_trial_prefs"
     private const val KEY_FIRST_LAUNCH = "trial_first_launch_timestamp"
@@ -43,6 +42,6 @@ object AppConfig {
     fun isTrialWarning(context: Context): Boolean {
         if (!IS_TRIAL) return false
         val elapsed = getElapsedMinutes(context)
-        return elapsed in (TRIAL_LIMIT_MINUTES - 5) until TRIAL_LIMIT_MINUTES
+        return elapsed in (TRIAL_LIMIT_MINUTES - 10) until TRIAL_LIMIT_MINUTES
     }
 }

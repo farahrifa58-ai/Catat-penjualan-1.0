@@ -116,13 +116,14 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Tulisan File APK berwarna merah
-            Text(
-                text = if (com.example.util.AppConfig.IS_TRIAL) "File APK: Versi Trial (30-40 Menit)" else "File APK: Full Version",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFD32F2F)
-            )
+            if (com.example.util.AppConfig.IS_TRIAL) {
+                Text(
+                    text = "Versi Trial (Batas 1 Jam)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD32F2F)
+                )
+            }
         }
 
         // Tagline di bagian bawah

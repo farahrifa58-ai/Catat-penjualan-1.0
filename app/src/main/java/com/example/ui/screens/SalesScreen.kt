@@ -1,8 +1,9 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,26 +19,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,32 +41,32 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.DepositItemEntity
 import com.example.model.DepositWithDetails
 import com.example.ui.components.ConditionStatusChip
-import com.example.ui.components.PaymentStatusChip
 import com.example.ui.theme.StatusAmber
 import com.example.ui.theme.StatusGreen
-import com.example.ui.theme.StatusRed
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.viewmodel.ScreenDestination
 import com.example.util.FormatUtils
+import kotlinx.coroutines.launch
 
 data class EditableSaleItem(
     val entity: DepositItemEntity,
@@ -99,21 +95,55 @@ fun SalesScreen(
     modifier: Modifier = Modifier
 ) {
     val strings = viewModel.strings
+    val allStalls by viewModel.allStalls.collectAsStateWithLifecycle()
+    val activeStalls by viewModel.activeStalls.collectAsStateWithLifecycle()
     val allDeposits by viewModel.allDeposits.collectAsStateWithLifecycle()
     val preselectedDeposit by viewModel.selectedDepositForSales.collectAsStateWithLifecycle()
 
-    var activeDeposit by remember { mutableStateOf<DepositWithDetails?>(null) }
-    var dropdownOpen by remember { mutableStateOf(false) }
+    val displayStalls = if (activeStalls.isNotEmpty()) activeStalls else allStalls
+
+    // State for selected stall & deposit
+    var selectedStallId by remember { mutableStateOf<Long?>(null) }
+    var selectedDepositId by remember { mutableStateOf<Long?>(null) }
     var directInputItem by remember { mutableStateOf<Pair<Int, EditableSaleItem>?>(null) }
 
     val editableItems = remember { mutableStateListOf<EditableSaleItem>() }
 
-    // Sync activeDeposit when preselectedDeposit changes or default to first available deposit
-    LaunchedEffect(preselectedDeposit, allDeposits) {
-        val target = preselectedDeposit ?: activeDeposit ?: allDeposits.firstOrNull()
-        activeDeposit = target
+    // Synchronize initial selection from preselectedDeposit or first available stall
+    LaunchedEffect(preselectedDeposit, displayStalls) {
+        if (preselectedDeposit != null) {
+            selectedStallId = preselectedDeposit?.deposit?.stallId
+            selectedDepositId = preselectedDeposit?.deposit?.id
+        } else if (selectedStallId == null && displayStalls.isNotEmpty()) {
+            selectedStallId = displayStalls.firstOrNull()?.id
+        }
+    }
+
+    // Find deposits for the currently selected stall
+    val depositsForStall = remember(selectedStallId, allDeposits) {
+        if (selectedStallId != null) {
+            allDeposits.filter { it.deposit.stallId == selectedStallId }
+        } else {
+            emptyList()
+        }
+    }
+
+    // Active deposit for this stall: either specific selectedDepositId or the latest deposit
+    val activeDeposit = remember(depositsForStall, selectedDepositId) {
+        if (selectedDepositId != null) {
+            depositsForStall.find { it.deposit.id == selectedDepositId } ?: depositsForStall.firstOrNull()
+        } else {
+            depositsForStall.firstOrNull()
+        }
+    }
+
+    // CRITICAL: Re-initialize editableItems strictly for the active deposit when stall or deposit changes!
+    // When user switches to another stall:
+    // If that stall has not recorded sales yet, sold starts at 0! (NEVER carries over input from previous stall).
+    // If that stall has already recorded sales, it loads its own recorded sale count.
+    LaunchedEffect(activeDeposit?.deposit?.id, activeDeposit?.items) {
         editableItems.clear()
-        target?.items?.forEach { item ->
+        activeDeposit?.items?.forEach { item ->
             val initialSold = if (item.hasRecordedSale) item.quantitySold else 0
             val rem = (item.quantitySent - initialSold).coerceAtLeast(0)
             val initialResale = if (item.hasRecordedSale) item.resaleableQty else rem
@@ -147,7 +177,7 @@ fun SalesScreen(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Deposit Selector Card
+        // 1. HORIZONTAL STALL SELECTOR (DAFTAR TOKO KE SAMPING SEPERTI DI MENU SETORAN)
         item {
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -168,64 +198,169 @@ fun SalesScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                .clickable { dropdownOpen = true }
-                                .padding(horizontal = 14.dp, vertical = 12.dp)
-                                .testTag("sales_deposit_selector")
+                    Text(
+                        text = "Pilih Toko / Lapak Penjualan:",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (displayStalls.isEmpty()) {
+                        Card(
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth().padding(12.dp)
+                            ) {
                                 Text(
-                                    text = if (activeDeposit != null) {
-                                        val name = activeDeposit?.deposit?.stallName
-                                        if (!name.isNullOrBlank()) name else "Setoran Lapak"
-                                    } else strings.pilihSetoranUntukPenjualan,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                                    text = "Belum ada lapak terdaftar.",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                activeDeposit?.let {
-                                    Text(
-                                        text = "${FormatUtils.formatDateDisplay(it.deposit.date)} • ${it.totalSent} item dikirim",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                Button(
+                                    onClick = { viewModel.navigateTo(ScreenDestination.MENU) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("+ Tambah Lapak", fontSize = 11.sp)
                                 }
                             }
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                         }
-
-                        DropdownMenu(
-                            expanded = dropdownOpen,
-                            onDismissRequest = { dropdownOpen = false }
+                    } else {
+                        // Tampilan toko ke samping (horizontal scrollable row)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(vertical = 4.dp)
                         ) {
-                            allDeposits.forEach { dep ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(
-                                                text = if (dep.deposit.stallName.isNotBlank()) dep.deposit.stallName else "Setoran",
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Text(
-                                                text = "${FormatUtils.formatDateDisplay(dep.deposit.date)} (${dep.totalSent} item)",
-                                                fontSize = 12.sp
+                            displayStalls.forEach { stall ->
+                                val isSelected = selectedStallId == stall.id
+                                val stallDep = allDeposits.firstOrNull { it.deposit.stallId == stall.id }
+                                val hasSale = stallDep?.items?.any { it.hasRecordedSale } == true
+
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                    ),
+                                    border = BorderStroke(
+                                        width = if (isSelected) 2.dp else 1.dp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            if (selectedStallId != stall.id) {
+                                                // Reset selection to the new stall
+                                                selectedStallId = stall.id
+                                                selectedDepositId = null
+                                            }
+                                        }
+                                        .testTag("sales_stall_select_${stall.id}")
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                                )
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Storefront,
+                                                contentDescription = null,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
-                                    },
-                                    onClick = {
-                                        activeDeposit = dep
-                                        viewModel.selectDepositForSales(dep)
-                                        dropdownOpen = false
+
+                                        Spacer(modifier = Modifier.width(10.dp))
+
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = stall.name,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                if (isSelected) {
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Selected",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = when {
+                                                    stallDep == null -> "Belum ada setoran"
+                                                    hasSale -> "Sudah ada penjualan"
+                                                    else -> "${stallDep.totalSent} item dikirim"
+                                                },
+                                                fontSize = 11.sp,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
-                                )
+                                }
+                            }
+                        }
+
+                        // Jika ada beberapa setoran untuk toko ini (misal beda tanggal)
+                        if (depositsForStall.size > 1) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Pilih Tanggal Setoran:",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                            ) {
+                                depositsForStall.forEach { dep ->
+                                    val isDepSelected = (activeDeposit?.deposit?.id == dep.deposit.id)
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (isDepSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                            )
+                                            .clickable {
+                                                selectedDepositId = dep.deposit.id
+                                            }
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = "${FormatUtils.formatDateDisplay(dep.deposit.date)} (${dep.totalSent} item)",
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isDepSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isDepSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -244,13 +379,16 @@ fun SalesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth().padding(24.dp)
                     ) {
+                        val currentStallName = displayStalls.find { it.id == selectedStallId }?.name ?: "toko ini"
                         Text(
-                            text = strings.belumAdaSetoranHariIni,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Belum ada setoran tercatat untuk $currentStallName.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Button(
-                            onClick = { viewModel.navigateTo(ScreenDestination.SETORAN) }
+                            onClick = { viewModel.navigateTo(ScreenDestination.SETORAN) },
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Text(strings.catatSetoran)
                         }
@@ -428,7 +566,7 @@ fun SalesScreen(
                             )
                         }
 
-                        // Remaining condition allocation section (Section 6)
+                        // Remaining condition allocation section
                         if (item.remaining > 0) {
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
@@ -550,7 +688,7 @@ fun SalesScreen(
                 }
             }
 
-            // 4. Live Total Bill Summary Card (Section 7)
+            // 4. Live Total Bill Summary Card
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),

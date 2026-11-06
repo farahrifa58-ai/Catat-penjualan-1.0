@@ -78,10 +78,10 @@ fun AboutScreen(
         )
 
         Text(
-            text = "Version 1.0.0",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold
+            text = if (com.example.util.AppConfig.IS_TRIAL) "Versi Trial (Batas 1 Jam)" else "Full Version",
+            fontSize = 15.sp,
+            color = if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -115,6 +115,26 @@ fun AboutScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Status Versi Badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFFFEBEE)
+                            else MaterialTheme.colorScheme.primaryContainer
+                        )
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = if (com.example.util.AppConfig.IS_TRIAL) "Status: Versi Trial (Batas Waktu 1 Jam)" else "Status: Full Version (Akses Permanen)",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Text(
                     text = "Developer: Rafline Dev",
                     fontSize = 14.sp,
@@ -131,14 +151,15 @@ fun AboutScreen(
                     fontWeight = FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = if (com.example.util.AppConfig.IS_TRIAL) "File APK: CatatJualan_Trial.apk (Uji Coba 30-40 Menit)" else "File APK: CatatJualan_Full.apk (Full Version)",
-                    fontSize = 13.sp,
-                    color = androidx.compose.ui.graphics.Color(0xFFD32F2F),
-                    fontWeight = FontWeight.Bold
-                )
+                if (com.example.util.AppConfig.IS_TRIAL) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Untuk upgrade ke Full Version, hubungi email di atas.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 

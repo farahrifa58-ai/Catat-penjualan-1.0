@@ -862,9 +862,9 @@ fun StallWithMenuPricesCard(
             .testTag("stall_full_card_${stall.id}")
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Stall Header: Photo/Avatar, Name, Address, Active toggle, Edit, Delete
+            // Stall Header: Section 1 (Avatar, Name, Address, Status Badge)
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (!stall.photoUri.isNullOrBlank() && File(stall.photoUri).exists()) {
@@ -873,16 +873,16 @@ fun StallWithMenuPricesCard(
                         contentDescription = stall.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                     )
                 } else {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(12.dp))
                             .background(
                                 if (stall.isActive) MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.surfaceVariant
@@ -892,12 +892,12 @@ fun StallWithMenuPricesCard(
                             imageVector = Icons.Default.Storefront,
                             contentDescription = null,
                             tint = if (stall.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -907,55 +907,97 @@ fun StallWithMenuPricesCard(
                         color = if (stall.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
                     )
                     if (stall.address.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = stall.address,
-                            fontSize = 12.sp,
+                            text = "📍 ${stall.address}",
+                            fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    if (stall.notes.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "📝 ${stall.notes}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Status chip
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (stall.isActive) StatusGreen.copy(alpha = 0.12f)
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
                     Text(
-                        text = if (stall.isActive) strings.aktif else strings.nonaktif,
+                        text = if (stall.isActive) "Aktif" else "Nonaktif",
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         color = if (stall.isActive) StatusGreen else MaterialTheme.colorScheme.outline
                     )
                 }
+            }
 
-                // Active toggle switch
-                Switch(
-                    checked = stall.isActive,
-                    onCheckedChange = { onToggleActive() },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    modifier = Modifier.padding(end = 4.dp)
-                )
+            Spacer(modifier = Modifier.height(10.dp))
 
-                // Edit stall button
-                IconButton(
-                    onClick = onEditStall,
-                    modifier = Modifier.size(34.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = strings.editLapak,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+            // Stall Header: Section 2 (Action Bar with Switch, Edit, Delete)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Status Lapak:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Switch(
+                        checked = stall.isActive,
+                        onCheckedChange = { onToggleActive() },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     )
                 }
 
-                // Delete stall button
-                IconButton(
-                    onClick = onDeleteStall,
-                    modifier = Modifier.size(34.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = strings.hapusLapak,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(
+                        onClick = onEditStall,
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Edit Lapak", fontSize = 11.sp)
+                    }
+
+                    IconButton(
+                        onClick = onDeleteStall,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = strings.hapusLapak,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
 
@@ -969,25 +1011,24 @@ fun StallWithMenuPricesCard(
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                     .padding(12.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Harga Produk di ${stall.name}:",
-                        fontSize = 13.sp,
+                        text = "Harga Produk di Lapak ${stall.name}:",
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Otomatis digunakan saat setoran",
+                        text = "Harga di bawah otomatis digunakan saat setoran lapak ini",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 if (activeMenus.isEmpty()) {
                     Text(
@@ -1037,102 +1078,132 @@ fun ProductPriceRowInStall(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp)
+            .padding(vertical = 4.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(12.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            // Baris 1: Nama Menu (Kiri) dan Badge Laba (Kanan)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     text = menu.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+
+                // Badge Laba yang rapi dan terpisah, tidak akan terpotong vertikal
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (margin > 0) StatusGreen.copy(alpha = 0.12f)
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
-                        text = "HPP: ${FormatUtils.formatRupiah(menu.hpp)}",
+                        text = "Laba: +${FormatUtils.formatRupiah(margin)}",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "•",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                    Text(
-                        text = "Laba: ${FormatUtils.formatRupiah(margin)}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         color = if (margin > 0) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
-            // Price Input Field - clean, uncompressed, beautifully centered
-            OutlinedTextField(
-                value = if (priceDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmount),
-                onValueChange = { input ->
-                    val digits = input.filter { it.isDigit() }.take(9)
-                    priceDigits = digits
-                    isDirty = true
-                },
-                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                ),
-                prefix = {
-                    Text(
-                        text = "Rp ",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                placeholder = { Text("0", fontSize = 12.sp) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier
-                    .width(135.dp)
-                    .testTag("input_stall_price_${menu.id}")
+            // Baris 2: Informasi Modal (HPP) dan Satuan
+            Text(
+                text = "Modal (HPP): ${FormatUtils.formatRupiah(menu.hpp)} / ${menu.unit}",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Save Price Button
-            Button(
-                onClick = {
-                    val p = priceDigits.toDoubleOrNull() ?: 0.0
-                    if (p > 0) {
-                        onSave(p)
-                        isDirty = false
-                    }
-                },
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDirty) MaterialTheme.colorScheme.primary else StatusGreen,
-                    contentColor = androidx.compose.ui.graphics.Color.White
-                ),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                modifier = Modifier
-                    .height(48.dp)
-                    .testTag("btn_save_price_${menu.id}")
+            // Baris 3: Label, Kolom Input Harga, dan Tombol Simpan
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Simpan",
-                    modifier = Modifier.size(18.dp)
+                Text(
+                    text = "Harga:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                OutlinedTextField(
+                    value = if (priceDigits.isEmpty()) "" else FormatUtils.formatNumber(currentAmount),
+                    onValueChange = { input ->
+                        val digits = input.filter { it.isDigit() }.take(9)
+                        priceDigits = digits
+                        isDirty = true
+                    },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    ),
+                    prefix = {
+                        Text(
+                            text = "Rp ",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    placeholder = { Text("0", fontSize = 12.sp) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("input_stall_price_${menu.id}")
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = {
+                        val p = priceDigits.toDoubleOrNull() ?: 0.0
+                        if (p > 0) {
+                            onSave(p)
+                            isDirty = false
+                        }
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDirty) MaterialTheme.colorScheme.primary else StatusGreen,
+                        contentColor = androidx.compose.ui.graphics.Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    modifier = Modifier
+                        .height(46.dp)
+                        .testTag("btn_save_price_${menu.id}")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Simpan",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (isDirty) "Simpan" else "OK",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

@@ -47,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -98,6 +99,30 @@ fun DepositScreen(
     // Draft items list
     val draftItems = remember { mutableStateListOf<DraftDepositItem>() }
 
+    // Map to keep track of drafted quantities per stallId -> (menuId -> qty)
+    val stallQuantities = remember { mutableStateMapOf<Long, MutableMap<Long, Int>>() }
+
+    fun reloadDraftItemsForStall(stall: StallEntity?) {
+        if (stall == null) return
+        draftItems.clear()
+        val savedQtys = stallQuantities[stall.id] ?: emptyMap()
+        activeMenus.forEachIndexed { index, m ->
+            val specificPrice = allStallPrices.find { it.stallId == stall.id && it.menuId == m.id }?.price ?: m.price
+            // Crucial: If user hasn't set anything for THIS stall, quantity starts strictly from 0!
+            val initialQty = savedQtys[m.id] ?: 0
+            draftItems.add(
+                DraftDepositItem(
+                    tempId = index.toLong(),
+                    menuId = m.id,
+                    menuName = m.name,
+                    priceSnapshot = specificPrice,
+                    unit = m.unit,
+                    quantitySent = initialQty
+                )
+            )
+        }
+    }
+
     // Set initial stall if none selected
     LaunchedEffect(activeStalls) {
         if (selectedStall == null && activeStalls.isNotEmpty()) {
@@ -105,35 +130,10 @@ fun DepositScreen(
         }
     }
 
-    // When selectedStall changes, refresh draft items with stall-specific pricing!
-    LaunchedEffect(selectedStall, activeMenus, allStallPrices) {
-        val stall = selectedStall
-        if (stall != null && draftItems.isEmpty() && activeMenus.isNotEmpty()) {
-            activeMenus.forEachIndexed { index, m ->
-                val specificPrice = allStallPrices.find { it.stallId == stall.id && it.menuId == m.id }?.price ?: m.price
-                val initialQty = 0
-                draftItems.add(
-                    DraftDepositItem(
-                        tempId = index.toLong(),
-                        menuId = m.id,
-                        menuName = m.name,
-                        priceSnapshot = specificPrice,
-                        unit = m.unit,
-                        quantitySent = initialQty
-                    )
-                )
-            }
-        } else if (stall != null && draftItems.isNotEmpty()) {
-            // Automatically update price for all items to match this stall's configured price!
-            draftItems.forEachIndexed { i, item ->
-                if (item.menuId != null) {
-                    val sp = allStallPrices.find { it.stallId == stall.id && it.menuId == item.menuId }?.price
-                        ?: activeMenus.find { it.id == item.menuId }?.price
-                    if (sp != null && sp != item.priceSnapshot) {
-                        draftItems[i] = item.copy(priceSnapshot = sp)
-                    }
-                }
-            }
+    // When selectedStall or activeMenus or prices change, reload draft items specifically for this stall!
+    LaunchedEffect(selectedStall?.id, activeMenus, allStallPrices) {
+        selectedStall?.let { stall ->
+            reloadDraftItemsForStall(stall)
         }
     }
 
@@ -258,16 +258,7 @@ fun DepositScreen(
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable {
                                             selectedStall = stall
-                                            // Update price snapshots for all draft items to match this stall!
-                                            draftItems.forEachIndexed { i, item ->
-                                                if (item.menuId != null) {
-                                                    val sp = allStallPrices.find { it.stallId == stall.id && it.menuId == item.menuId }?.price
-                                                        ?: activeMenus.find { it.id == item.menuId }?.price
-                                                    if (sp != null) {
-                                                        draftItems[i] = item.copy(priceSnapshot = sp)
-                                                    }
-                                                }
-                                            }
+                                            reloadDraftItemsForStall(stall)
                                         }
                                         .testTag("stall_select_${stall.id}")
                                 ) {
@@ -450,7 +441,15 @@ fun DepositScreen(
                         }
 
                         IconButton(
-                            onClick = { draftItems.remove(item) },
+                            onClick = {
+                                selectedStall?.let { s ->
+                                    item.menuId?.let { mId ->
+                                        val qMap = stallQuantities.getOrPut(s.id) { mutableMapOf() }
+                                        qMap[mId] = 0
+                                    }
+                                }
+                                draftItems.remove(item)
+                            },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
@@ -500,7 +499,14 @@ fun DepositScreen(
                             IconButton(
                                 onClick = {
                                     if (idx >= 0 && item.quantitySent > 0) {
-                                        draftItems[idx] = item.copy(quantitySent = item.quantitySent - 1)
+                                        val newQ = item.quantitySent - 1
+                                        draftItems[idx] = item.copy(quantitySent = newQ)
+                                        selectedStall?.let { s ->
+                                            item.menuId?.let { mId ->
+                                                val qMap = stallQuantities.getOrPut(s.id) { mutableMapOf() }
+                                                qMap[mId] = newQ
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier.size(34.dp)
@@ -524,7 +530,14 @@ fun DepositScreen(
                             IconButton(
                                 onClick = {
                                     if (idx >= 0) {
-                                        draftItems[idx] = item.copy(quantitySent = item.quantitySent + 1)
+                                        val newQ = item.quantitySent + 1
+                                        draftItems[idx] = item.copy(quantitySent = newQ)
+                                        selectedStall?.let { s ->
+                                            item.menuId?.let { mId ->
+                                                val qMap = stallQuantities.getOrPut(s.id) { mutableMapOf() }
+                                                qMap[mId] = newQ
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier.size(34.dp)
@@ -594,8 +607,14 @@ fun DepositScreen(
                                 val existing = draftItems.find { it.menuId == menu.id }
                                 if (existing != null) {
                                     val eIdx = draftItems.indexOf(existing)
-                                    draftItems[eIdx] = existing.copy(quantitySent = existing.quantitySent + 1)
+                                    val newQ = existing.quantitySent + 1
+                                    draftItems[eIdx] = existing.copy(quantitySent = newQ)
+                                    selectedStall?.let { s ->
+                                        val qMap = stallQuantities.getOrPut(s.id) { mutableMapOf() }
+                                        qMap[menu.id] = newQ
+                                    }
                                 } else {
+                                    val initialQ = 1
                                     draftItems.add(
                                         DraftDepositItem(
                                             tempId = System.currentTimeMillis() + draftItems.size,
@@ -603,9 +622,13 @@ fun DepositScreen(
                                             menuName = menu.name,
                                             priceSnapshot = stallPrice,
                                             unit = menu.unit,
-                                            quantitySent = 0
+                                            quantitySent = initialQ
                                         )
                                     )
+                                    selectedStall?.let { s ->
+                                        val qMap = stallQuantities.getOrPut(s.id) { mutableMapOf() }
+                                        qMap[menu.id] = initialQ
+                                    }
                                 }
                                 menuExpanded = false
                             }
@@ -643,6 +666,10 @@ fun DepositScreen(
                         items = depositItems,
                         onSuccess = {
                             notes = ""
+                            selectedStall?.let { s ->
+                                stallQuantities[s.id]?.clear()
+                                reloadDraftItemsForStall(s)
+                            }
                         }
                     )
                 },

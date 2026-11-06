@@ -404,10 +404,10 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = if (com.example.util.AppConfig.IS_TRIAL) "File APK: CatatJualan_Trial_30Menit.apk" else "File APK: CatatJualan_FullVersion.apk",
+                            text = if (com.example.util.AppConfig.IS_TRIAL) "Versi Trial (Batas 1 Jam)" else "Full Version",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = androidx.compose.ui.graphics.Color(0xFFD32F2F)
+                            color = if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary
                         )
                     }
                     Icon(

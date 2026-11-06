@@ -107,12 +107,14 @@ fun AppTopBar(
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = if (com.example.util.AppConfig.IS_TRIAL) "File APK: Versi Trial (Batas 30 Menit)" else "File APK: Full Version (Permanen)",
-                    fontSize = 11.sp,
-                    color = if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFD32F2F) else androidx.compose.ui.graphics.Color(0xFF2E7D32),
-                    fontWeight = FontWeight.Bold
-                )
+                if (com.example.util.AppConfig.IS_TRIAL) {
+                    Text(
+                        text = "Versi Trial (Batas 1 Jam)",
+                        fontSize = 11.sp,
+                        color = androidx.compose.ui.graphics.Color(0xFFD32F2F),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             if (!isSubScreen) {
