@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
@@ -750,95 +751,141 @@ fun HistoryItemCard(
                     }
                 }
 
-                PaymentStatusChip(status = deposit.paymentStatus, strings = strings)
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 3-Column Pill Box: Kirim | Terjual | Sisa
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(vertical = 6.dp, horizontal = 4.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Kirim", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(text = "${deposit.totalSent}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                if (deposit.isHoliday) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(StatusAmber.copy(alpha = 0.15f))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "🏖️ Libur",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StatusAmber
+                        )
                     }
-                }
-
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(StatusGreen.copy(alpha = 0.12f))
-                        .padding(vertical = 6.dp, horizontal = 4.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Terjual", fontSize = 10.sp, color = StatusGreen, fontWeight = FontWeight.SemiBold)
-                        Text(text = "${deposit.totalSold}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = StatusGreen)
-                    }
-                }
-
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(StatusAmber.copy(alpha = 0.14f))
-                        .padding(vertical = 6.dp, horizontal = 4.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Sisa", fontSize = 10.sp, color = StatusAmber, fontWeight = FontWeight.SemiBold)
-                        Text(text = "${deposit.totalRemaining}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = StatusAmber)
-                    }
+                } else {
+                    PaymentStatusChip(status = deposit.paymentStatus, strings = strings)
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Financial Summary Bar & Arrow
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                    .padding(horizontal = 10.dp, vertical = 8.dp)
-            ) {
-                Column {
-                    Text(
-                        text = "Tagihan: ${FormatUtils.formatRupiah(deposit.totalBill)}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Dibayar: ${FormatUtils.formatRupiah(deposit.totalPaid)}" +
-                                if (deposit.remainingBill > 0) " • Piutang: ${FormatUtils.formatRupiah(deposit.remainingBill)}" else " • Lunas",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (deposit.remainingBill > 0) StatusRed else StatusGreen
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "Detail", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+            if (deposit.isHoliday) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(StatusAmber.copy(alpha = 0.1f))
+                        .padding(10.dp)
+                ) {
                     Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Detail",
-                        tint = MaterialTheme.colorScheme.primary,
+                        imageVector = Icons.Default.BeachAccess,
+                        contentDescription = null,
+                        tint = StatusAmber,
                         modifier = Modifier.size(18.dp)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (deposit.deposit.notes.isNotBlank() && deposit.deposit.notes != "Lapak Libur") {
+                            "Lapak Libur: \"${deposit.deposit.notes}\""
+                        } else {
+                            "Lapak Libur (Tidak ada setoran makanan)"
+                        },
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 3-Column Pill Box: Kirim | Terjual | Sisa
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(vertical = 6.dp, horizontal = 4.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "Kirim", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = "${deposit.totalSent}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(StatusGreen.copy(alpha = 0.12f))
+                            .padding(vertical = 6.dp, horizontal = 4.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "Terjual", fontSize = 10.sp, color = StatusGreen, fontWeight = FontWeight.SemiBold)
+                            Text(text = "${deposit.totalSold}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = StatusGreen)
+                        }
+                    }
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(StatusAmber.copy(alpha = 0.14f))
+                            .padding(vertical = 6.dp, horizontal = 4.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "Sisa", fontSize = 10.sp, color = StatusAmber, fontWeight = FontWeight.SemiBold)
+                            Text(text = "${deposit.totalRemaining}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = StatusAmber)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Financial Summary Bar & Arrow
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Tagihan: ${FormatUtils.formatRupiah(deposit.totalBill)}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Dibayar: ${FormatUtils.formatRupiah(deposit.totalPaid)}" +
+                                    if (deposit.remainingBill > 0) " • Piutang: ${FormatUtils.formatRupiah(deposit.remainingBill)}" else " • Lunas",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (deposit.remainingBill > 0) StatusRed else StatusGreen
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "Detail", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Detail",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }

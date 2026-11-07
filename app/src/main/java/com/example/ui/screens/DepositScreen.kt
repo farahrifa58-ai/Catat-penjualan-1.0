@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -54,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.DepositItemEntity
 import com.example.data.local.entity.StallEntity
 import com.example.ui.components.PaymentStatusChip
+import com.example.ui.theme.StatusAmber
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.viewmodel.ScreenDestination
 import com.example.util.FormatUtils
@@ -95,6 +98,7 @@ fun DepositScreen(
     var dateText by remember { mutableStateOf(FormatUtils.getTodayDateIso()) }
     var selectedStall by remember { mutableStateOf<StallEntity?>(null) }
     var notes by remember { mutableStateOf("") }
+    var isHolidayMode by remember { mutableStateOf(false) }
 
     // Draft items list
     val draftItems = remember { mutableStateListOf<DraftDepositItem>() }
@@ -317,27 +321,197 @@ fun DepositScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Additional Notes
-                    OutlinedTextField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        label = { Text(strings.catatanTambahan) },
-                        placeholder = { Text(strings.catatanHint) },
-                        maxLines = 2,
-                        shape = RoundedCornerShape(12.dp),
+                    // Pilihan Mode: Setor Makanan vs Lapak Libur
+                    Text(
+                        text = "Pilihan Aktivitas Hari Ini:",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .testTag("deposit_form_notes")
-                    )
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Opsi 1: Setor Makanan
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (!isHolidayMode) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                .clickable { isHolidayMode = false }
+                                .padding(vertical = 10.dp)
+                                .testTag("deposit_mode_deliver")
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Fastfood,
+                                    contentDescription = null,
+                                    tint = if (!isHolidayMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Setor Makanan",
+                                    fontSize = 13.sp,
+                                    fontWeight = if (!isHolidayMode) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (!isHolidayMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // Opsi 2: Lapak Libur
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isHolidayMode) StatusAmber else Color.Transparent)
+                                .clickable { isHolidayMode = true }
+                                .padding(vertical = 10.dp)
+                                .testTag("deposit_mode_holiday")
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.BeachAccess,
+                                    contentDescription = null,
+                                    tint = if (isHolidayMode) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Lapak Libur",
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isHolidayMode) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isHolidayMode) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    if (!isHolidayMode) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Additional Notes
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text(strings.catatanTambahan) },
+                            placeholder = { Text(strings.catatanHint) },
+                            maxLines = 2,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("deposit_form_notes")
+                        )
+                    }
                 }
             }
         }
 
-        // Section: Total Makanan Dikirim (Card Banner yang rapi & jelas)
-        item {
-            Card(
+        if (isHolidayMode) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, StatusAmber.copy(alpha = 0.5f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    modifier = Modifier.fillMaxWidth().testTag("holiday_card")
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth().padding(22.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(StatusAmber.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BeachAccess,
+                                contentDescription = null,
+                                tint = StatusAmber,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Pencatatan Lapak Libur",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val stallDisplayName = selectedStall?.name ?: "Lapak terpilih"
+                        Text(
+                            text = "Lapak \"$stallDisplayName\" akan dicatat LIBUR pada tanggal ${FormatUtils.formatDateDisplay(dateText)}.\nTidak ada makanan yang disetor hari ini.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Alasan / Catatan Libur (Opsional)") },
+                            placeholder = { Text("Contoh: Lapak tutup, renovasi, hari libur") },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().testTag("holiday_notes_input")
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                val currentStall = selectedStall
+                                viewModel.createDeposit(
+                                    date = dateText,
+                                    stallId = currentStall?.id,
+                                    stallName = currentStall?.name ?: "",
+                                    notes = notes.ifBlank { "Lapak Libur" },
+                                    items = emptyList(),
+                                    isHoliday = true,
+                                    onSuccess = {
+                                        notes = ""
+                                        isHolidayMode = false
+                                    }
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StatusAmber),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .testTag("save_holiday_button")
+                        ) {
+                            Icon(Icons.Default.BeachAccess, contentDescription = null, tint = Color.White)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Simpan Status Lapak Libur",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            // Section: Total Makanan Dikirim (Card Banner yang rapi & jelas)
+            item {
+                Card(
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                 modifier = Modifier.fillMaxWidth()
@@ -687,6 +861,7 @@ fun DepositScreen(
                 )
             }
         }
+    }
 
         // Saved Deposits List Header
         item {
@@ -731,12 +906,33 @@ fun DepositScreen(
                                 fontSize = 14.sp
                             )
                             Text(
-                                text = "${FormatUtils.formatDateDisplay(dep.deposit.date)} • ${dep.totalSent} item dikirim",
+                                text = if (dep.isHoliday) {
+                                    "${FormatUtils.formatDateDisplay(dep.deposit.date)} • 🏖️ Lapak Libur"
+                                } else {
+                                    "${FormatUtils.formatDateDisplay(dep.deposit.date)} • ${dep.totalSent} item dikirim"
+                                },
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                fontWeight = if (dep.isHoliday) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (dep.isHoliday) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        PaymentStatusChip(status = dep.paymentStatus, strings = strings)
+                        if (dep.isHoliday) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(StatusAmber.copy(alpha = 0.15f))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Libur",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StatusAmber
+                                )
+                            }
+                        } else {
+                            PaymentStatusChip(status = dep.paymentStatus, strings = strings)
+                        }
                     }
                 }
             }

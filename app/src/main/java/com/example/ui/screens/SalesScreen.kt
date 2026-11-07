@@ -25,7 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Storefront
@@ -52,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -245,17 +248,31 @@ fun SalesScreen(
                         ) {
                             displayStalls.forEach { stall ->
                                 val isSelected = selectedStallId == stall.id
-                                val stallDep = allDeposits.firstOrNull { it.deposit.stallId == stall.id }
+                                val stallDeposits = allDeposits.filter { it.deposit.stallId == stall.id }
+                                val stallDep = if (isSelected && selectedDepositId != null) {
+                                    stallDeposits.find { it.deposit.id == selectedDepositId } ?: stallDeposits.firstOrNull()
+                                } else {
+                                    stallDeposits.firstOrNull()
+                                }
                                 val hasSale = stallDep?.items?.any { it.hasRecordedSale } == true
+                                val isHoliday = stallDep?.isHoliday == true
 
                                 Card(
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                        containerColor = when {
+                                            isSelected -> MaterialTheme.colorScheme.primaryContainer
+                                            hasSale -> StatusGreen.copy(alpha = 0.08f)
+                                            else -> MaterialTheme.colorScheme.surface
+                                        }
                                     ),
                                     border = BorderStroke(
                                         width = if (isSelected) 2.dp else 1.dp,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                        color = when {
+                                            isSelected -> MaterialTheme.colorScheme.primary
+                                            hasSale -> StatusGreen.copy(alpha = 0.6f)
+                                            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                        }
                                     ),
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
@@ -272,21 +289,55 @@ fun SalesScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
+                                        // Avatar with Checkmark Badge for updated/saved sales
                                         Box(
-                                            contentAlignment = Alignment.Center,
-                                            modifier = Modifier
-                                                .size(34.dp)
-                                                .clip(CircleShape)
-                                                .background(
-                                                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-                                                )
+                                            modifier = Modifier.size(36.dp)
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Storefront,
-                                                contentDescription = null,
-                                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(18.dp)
-                                            )
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(
+                                                        when {
+                                                            isSelected -> MaterialTheme.colorScheme.primary
+                                                            hasSale -> StatusGreen.copy(alpha = 0.18f)
+                                                            isHoliday -> StatusAmber.copy(alpha = 0.18f)
+                                                            else -> MaterialTheme.colorScheme.surfaceVariant
+                                                        }
+                                                    )
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isHoliday) Icons.Default.BeachAccess else Icons.Default.Storefront,
+                                                    contentDescription = null,
+                                                    tint = when {
+                                                        isSelected -> MaterialTheme.colorScheme.onPrimary
+                                                        hasSale -> StatusGreen
+                                                        isHoliday -> StatusAmber
+                                                        else -> MaterialTheme.colorScheme.primary
+                                                    },
+                                                    modifier = Modifier.size(19.dp)
+                                                )
+                                            }
+
+                                            // Centang Badge di bagian avatar lapak
+                                            if (hasSale) {
+                                                Box(
+                                                    contentAlignment = Alignment.Center,
+                                                    modifier = Modifier
+                                                        .size(16.dp)
+                                                        .align(Alignment.BottomEnd)
+                                                        .clip(CircleShape)
+                                                        .background(StatusGreen)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Sudah Diupdate",
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(11.dp)
+                                                    )
+                                                }
+                                            }
                                         }
 
                                         Spacer(modifier = Modifier.width(10.dp))
@@ -299,24 +350,31 @@ fun SalesScreen(
                                                     fontSize = 14.sp,
                                                     color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                                                 )
-                                                if (isSelected) {
-                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                if (hasSale) {
+                                                    Spacer(modifier = Modifier.width(5.dp))
                                                     Icon(
-                                                        imageVector = Icons.Default.Check,
-                                                        contentDescription = "Selected",
-                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        imageVector = Icons.Default.CheckCircle,
+                                                        contentDescription = "Sudah diupdate",
+                                                        tint = StatusGreen,
                                                         modifier = Modifier.size(16.dp)
                                                     )
                                                 }
                                             }
                                             Text(
                                                 text = when {
+                                                    isHoliday -> "🏖️ Lapak Libur"
                                                     stallDep == null -> "Belum ada setoran"
-                                                    hasSale -> "Sudah ada penjualan"
+                                                    hasSale -> "✓ Penjualan sudah di-update"
                                                     else -> "${stallDep.totalSent} item dikirim"
                                                 },
                                                 fontSize = 11.sp,
-                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                                fontWeight = if (hasSale || isHoliday) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = when {
+                                                    hasSale -> StatusGreen
+                                                    isHoliday -> StatusAmber
+                                                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                }
                                             )
                                         }
                                     }
@@ -391,6 +449,60 @@ fun SalesScreen(
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Text(strings.catatSetoran)
+                        }
+                    }
+                }
+            }
+        } else if (activeDeposit.isHoliday) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, StatusAmber.copy(alpha = 0.5f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth().padding(24.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(StatusAmber.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BeachAccess,
+                                contentDescription = null,
+                                tint = StatusAmber,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Lapak Sedang Libur",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val currentStallName = displayStalls.find { it.id == selectedStallId }?.name ?: "Lapak ini"
+                        Text(
+                            text = "$currentStallName tercatat libur pada tanggal ${FormatUtils.formatDateDisplay(activeDeposit.deposit.date)}.\nTidak ada makanan yang dikirim atau tagihan penjualan yang perlu diinput.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        if (activeDeposit.deposit.notes.isNotBlank() && activeDeposit.deposit.notes != "Lapak Libur") {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Catatan: \"${activeDeposit.deposit.notes}\"",
+                                fontSize = 12.sp,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

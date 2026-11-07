@@ -11,5 +11,6 @@ data class DepositEntity(
     val stallId: Long? = null,
     val stallName: String = "", // Snapshot of stall name at transaction time
     val notes: String = "",
+    val isHoliday: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

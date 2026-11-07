@@ -15,6 +15,9 @@ data class DepositWithDetails(
     val items: List<DepositItemEntity>,
     val payments: List<PaymentEntity>
 ) {
+    val isHoliday: Boolean
+        get() = deposit.isHoliday
+
     val totalSent: Int
         get() = items.sumOf { it.quantitySent }
 

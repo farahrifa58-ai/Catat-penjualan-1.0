@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Paid
@@ -132,7 +133,23 @@ fun DetailTransactionScreen(
                                 )
                             }
                         }
-                        PaymentStatusChip(status = deposit.paymentStatus, strings = strings)
+                        if (deposit.isHoliday) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(StatusAmber.copy(alpha = 0.15f))
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    text = "🏖️ Libur",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StatusAmber
+                                )
+                            }
+                        } else {
+                            PaymentStatusChip(status = deposit.paymentStatus, strings = strings)
+                        }
                     }
 
                     if (deposit.deposit.notes.isNotBlank()) {
@@ -144,144 +161,178 @@ fun DetailTransactionScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    if (deposit.isHoliday) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(StatusAmber.copy(alpha = 0.12f))
+                                .padding(14.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BeachAccess,
+                                contentDescription = null,
+                                tint = StatusAmber,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Lapak Sedang Libur",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Tidak ada setoran makanan atau tagihan pada transaksi ini.",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                    // Stats breakdown row
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                .padding(8.dp)
+                        // Stats breakdown row
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column {
-                                Text(text = strings.dikirim, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(text = "${deposit.totalSent}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    .padding(8.dp)
+                            ) {
+                                Column {
+                                    Text(text = strings.dikirim, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(text = "${deposit.totalSent}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(StatusGreen.copy(alpha = 0.1f))
+                                    .padding(8.dp)
+                            ) {
+                                Column {
+                                    Text(text = strings.terjual, fontSize = 11.sp, color = StatusGreen)
+                                    Text(text = "${deposit.totalSold}", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = StatusGreen)
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(StatusAmber.copy(alpha = 0.1f))
+                                    .padding(8.dp)
+                            ) {
+                                Column {
+                                    Text(text = strings.sisa, fontSize = 11.sp, color = StatusAmber)
+                                    Text(text = "${deposit.totalRemaining}", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = StatusAmber)
+                                }
                             }
                         }
-                        Box(
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Tagihan vs Pembayaran Box
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(StatusGreen.copy(alpha = 0.1f))
-                                .padding(8.dp)
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                                .padding(12.dp)
                         ) {
                             Column {
-                                Text(text = strings.terjual, fontSize = 11.sp, color = StatusGreen)
-                                Text(text = "${deposit.totalSold}", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = StatusGreen)
+                                Text(text = strings.totalTagihanLapak, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = FormatUtils.formatRupiah(deposit.totalBill),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
-                        }
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(StatusAmber.copy(alpha = 0.1f))
-                                .padding(8.dp)
-                        ) {
-                            Column {
-                                Text(text = strings.sisa, fontSize = 11.sp, color = StatusAmber)
-                                Text(text = "${deposit.totalRemaining}", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = StatusAmber)
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(text = strings.sisaTagihanLapak, fontSize = 12.sp, color = if (deposit.remainingBill > 0) StatusRed else StatusGreen)
+                                Text(
+                                    text = FormatUtils.formatRupiah(deposit.remainingBill),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (deposit.remainingBill > 0) StatusRed else StatusGreen
+                                )
                             }
                         }
                     }
+                }
+            }
+        }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Tagihan vs Pembayaran Box
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+        // 2. Action Buttons (Record/Update Sales, Add Payment) only if not holiday
+        if (!deposit.isHoliday) {
+            item {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.selectDepositForSales(deposit)
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                            .padding(12.dp)
+                            .weight(1f)
+                            .testTag("detail_edit_sales_button")
                     ) {
-                        Column {
-                            Text(text = strings.totalTagihanLapak, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(
-                                text = FormatUtils.formatRupiah(deposit.totalBill),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Input Penjualan",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(text = strings.sisaTagihanLapak, fontSize = 12.sp, color = if (deposit.remainingBill > 0) StatusRed else StatusGreen)
-                            Text(
-                                text = FormatUtils.formatRupiah(deposit.remainingBill),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (deposit.remainingBill > 0) StatusRed else StatusGreen
-                            )
-                        }
+                    Button(
+                        onClick = { showPaymentDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("detail_add_payment_button")
+                    ) {
+                        Icon(Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Catat Bayar",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
                     }
                 }
             }
-        }
 
-        // 2. Action Buttons (Record/Update Sales, Add Payment)
-        item {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(
-                    onClick = {
-                        viewModel.selectDepositForSales(deposit)
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("detail_edit_sales_button")
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Input Penjualan",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-
-                Button(
-                    onClick = { showPaymentDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("detail_add_payment_button")
-                ) {
-                    Icon(Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Catat Bayar",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
+            // 3. Itemized Food Details Section (Section 8)
+            item {
+                Text(
+                    text = strings.rincianMenu,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
-        }
-
-        // 3. Itemized Food Details Section (Section 8)
-        item {
-            Text(
-                text = strings.rincianMenu,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
 
         items(deposit.items, key = { "det_item_${it.id}" }) { item ->
             Card(
@@ -412,6 +463,7 @@ fun DetailTransactionScreen(
                 }
             }
         }
+    }
 
         // 5. Delete Transaction Button
         item {

@@ -235,6 +235,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         stallName: String,
         notes: String,
         items: List<DepositItemEntity>,
+        isHoliday: Boolean = false,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
@@ -242,26 +243,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _userMessage.emit(strings.lapakWajibDipilih)
                 return@launch
             }
-            if (items.isEmpty() || items.all { it.quantitySent <= 0 }) {
+            if (!isHoliday && (items.isEmpty() || items.all { it.quantitySent <= 0 })) {
                 _userMessage.emit(strings.setoranValidasiError)
                 return@launch
             }
-            // Check if any item has price <= 0
-            val invalidPrice = items.find { it.quantitySent > 0 && it.priceSnapshot <= 0 }
-            if (invalidPrice != null) {
-                _userMessage.emit(strings.hargaBelumDitentukan)
-                return@launch
+            if (!isHoliday) {
+                // Check if any item has price <= 0
+                val invalidPrice = items.find { it.quantitySent > 0 && it.priceSnapshot <= 0 }
+                if (invalidPrice != null) {
+                    _userMessage.emit(strings.hargaBelumDitentukan)
+                    return@launch
+                }
             }
 
-            val validItems = items.filter { it.quantitySent > 0 }
+            val validItems = if (isHoliday) emptyList() else items.filter { it.quantitySent > 0 }
             val deposit = DepositEntity(
                 date = date,
                 stallId = stallId,
                 stallName = stallName.trim(), // Snapshot of stall name
-                notes = notes.trim()
+                notes = notes.trim(),
+                isHoliday = isHoliday
             )
             repository.createDeposit(deposit, validItems)
-            _userMessage.emit(strings.setoranBerhasilDisimpan)
+            if (isHoliday) {
+                _userMessage.emit("Status lapak libur berhasil dicatat")
+            } else {
+                _userMessage.emit(strings.setoranBerhasilDisimpan)
+            }
             onSuccess()
         }
     }

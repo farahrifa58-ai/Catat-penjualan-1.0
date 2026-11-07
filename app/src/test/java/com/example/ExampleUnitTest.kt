@@ -148,4 +148,49 @@ class ExampleUnitTest {
         assertEquals("Rp 10.000", com.example.util.FormatUtils.formatRupiah(10000.0))
         assertEquals(10000.0, com.example.util.FormatUtils.parseAmount("10.000"), 0.01)
     }
+
+    @Test
+    fun verify_holiday_deposit_and_sales_status() {
+        val holidayDeposit = DepositWithDetails(
+            deposit = DepositEntity(
+                id = 99,
+                date = "2026-11-07",
+                stallId = 10,
+                stallName = "Lapak Libur Test",
+                notes = "Toko Tutup",
+                isHoliday = true
+            ),
+            items = emptyList(),
+            payments = emptyList()
+        )
+
+        assertTrue(holidayDeposit.isHoliday)
+        assertEquals(0, holidayDeposit.totalSent)
+        assertEquals(0, holidayDeposit.totalSold)
+        assertEquals(0.0, holidayDeposit.totalBill, 0.01)
+
+        val activeDeposit = DepositWithDetails(
+            deposit = DepositEntity(
+                id = 100,
+                date = "2026-11-07",
+                stallId = 11,
+                stallName = "Lapak Tamba Rejo",
+                isHoliday = false
+            ),
+            items = listOf(
+                DepositItemEntity(
+                    depositId = 100,
+                    menuName = "Burger",
+                    priceSnapshot = 8500.0,
+                    quantitySent = 1,
+                    quantitySold = 1,
+                    hasRecordedSale = true
+                )
+            ),
+            payments = emptyList()
+        )
+
+        assertTrue(activeDeposit.isSaleRecorded)
+        assertEquals(8500.0, activeDeposit.totalBill, 0.01)
+    }
 }
