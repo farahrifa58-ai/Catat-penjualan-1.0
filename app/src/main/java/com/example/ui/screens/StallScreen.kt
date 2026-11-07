@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,19 +65,25 @@ fun StallScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val strings = viewModel.strings
     val stalls by viewModel.allStalls.collectAsStateWithLifecycle()
 
     var showAddEditDialog by remember { mutableStateOf(false) }
     var editingStall by remember { mutableStateOf<StallEntity?>(null) }
     var stallToDelete by remember { mutableStateOf<StallEntity?>(null) }
+    var showTrialLimitAlert by remember { mutableStateOf(false) }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    editingStall = null
-                    showAddEditDialog = true
+                    if (viewModel.isTrial && stalls.size >= com.example.util.AppConfig.TRIAL_MAX_STALLS) {
+                        showTrialLimitAlert = true
+                    } else {
+                        editingStall = null
+                        showAddEditDialog = true
+                    }
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -345,6 +354,57 @@ fun StallScreen(
             dismissButton = {
                 TextButton(onClick = { stallToDelete = null }) {
                     Text(strings.batal)
+                }
+            }
+        )
+    }
+
+    if (showTrialLimitAlert) {
+        AlertDialog(
+            onDismissRequest = { showTrialLimitAlert = false },
+            title = {
+                Text(
+                    text = "Batas Versi Trial (2 Lapak)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Versi Trial dibatasi maksimal 2 lapak. Untuk menambah lapak tanpa batas dan menikmati akses permanen, silakan upgrade ke Full Version dengan menghubungi pengembang:",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = com.example.util.AppConfig.DEVELOPER_EMAIL,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:${com.example.util.AppConfig.DEVELOPER_EMAIL}")
+                            putExtra(Intent.EXTRA_SUBJECT, "Upgrade Catat Jualan - Full Version")
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(intent, "Kirim Email..."))
+                        } catch (_: Exception) {}
+                        showTrialLimitAlert = false
+                    }
+                ) {
+                    Text("Hubungi via Email")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTrialLimitAlert = false }) {
+                    Text("Tutup")
                 }
             }
         )

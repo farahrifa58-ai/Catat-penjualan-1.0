@@ -18,6 +18,8 @@ data class AppStrings(
     
     // Summary Cards
     val summaryTitle: String,
+    val totalLapakDikirim: String,
+    val totalHpp: String,
     val totalDikirim: String,
     val totalTerjual: String,
     val totalSisa: String,
@@ -183,6 +185,8 @@ object TranslationHelper {
         tentangAplikasi = "Tentang Aplikasi",
         
         summaryTitle = "Ringkasan Usaha",
+        totalLapakDikirim = "Lapak Dikirim",
+        totalHpp = "Total HPP",
         totalDikirim = "Total Dikirim",
         totalTerjual = "Total Terjual",
         totalSisa = "Total Sisa",
@@ -339,6 +343,8 @@ object TranslationHelper {
         tentangAplikasi = "About App",
         
         summaryTitle = "Business Summary",
+        totalLapakDikirim = "Stalls Delivered",
+        totalHpp = "Total Cost (HPP)",
         totalDikirim = "Total Sent",
         totalTerjual = "Total Sold",
         totalSisa = "Total Remaining",

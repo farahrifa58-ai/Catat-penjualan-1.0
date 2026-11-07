@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -92,6 +93,7 @@ fun MenuScreen(
     val activeMenus by viewModel.activeMenuItems.collectAsStateWithLifecycle()
     val stalls by viewModel.allStalls.collectAsStateWithLifecycle()
     val allPrices by viewModel.allStallPrices.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     // Tab state: 0 = Daftar Menu, 1 = Daftar Lapak
     var selectedFeatureTab by remember { mutableIntStateOf(0) }
@@ -109,6 +111,7 @@ fun MenuScreen(
     // Dialog states for Info (tanda i)
     var showMenuInfoDialog by remember { mutableStateOf(false) }
     var showStallInfoDialog by remember { mutableStateOf(false) }
+    var showTrialLimitAlert by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         floatingActionButton = {
@@ -116,8 +119,12 @@ fun MenuScreen(
             if (selectedFeatureTab == 0) {
                 ExtendedFloatingActionButton(
                     onClick = {
-                        editingMenuItem = null
-                        showAddEditMenuDialog = true
+                        if (viewModel.isTrial && menuItems.size >= com.example.util.AppConfig.TRIAL_MAX_PRODUCTS) {
+                            showTrialLimitAlert = "menu"
+                        } else {
+                            editingMenuItem = null
+                            showAddEditMenuDialog = true
+                        }
                     },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     text = { Text("Tambah Menu", fontWeight = FontWeight.Bold) },
@@ -128,8 +135,12 @@ fun MenuScreen(
             } else {
                 ExtendedFloatingActionButton(
                     onClick = {
-                        editingStall = null
-                        showAddEditStallDialog = true
+                        if (viewModel.isTrial && stalls.size >= com.example.util.AppConfig.TRIAL_MAX_STALLS) {
+                            showTrialLimitAlert = "stall"
+                        } else {
+                            editingStall = null
+                            showAddEditStallDialog = true
+                        }
                     },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     text = { Text("Tambah Lapak", fontWeight = FontWeight.Bold) },
@@ -681,6 +692,60 @@ fun MenuScreen(
                     )
                 }
                 showAddEditMenuDialog = false
+            }
+        )
+    }
+
+    // Dialog: Trial Limit Reached (Max 2 lapak / 2 produk)
+    showTrialLimitAlert?.let { alertType ->
+        val isStall = alertType == "stall"
+        val limitName = if (isStall) "2 Lapak" else "2 Produk"
+        AlertDialog(
+            onDismissRequest = { showTrialLimitAlert = null },
+            title = {
+                Text(
+                    text = "Batas Versi Trial ($limitName)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Versi Trial dibatasi maksimal $limitName. Untuk menambah tanpa batas dan membuka akses permanen, silakan upgrade ke Full Version dengan menghubungi pengembang:",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = com.example.util.AppConfig.DEVELOPER_EMAIL,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:${com.example.util.AppConfig.DEVELOPER_EMAIL}")
+                            putExtra(Intent.EXTRA_SUBJECT, "Upgrade Catat Jualan - Full Version")
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(intent, "Kirim Email..."))
+                        } catch (_: Exception) {}
+                        showTrialLimitAlert = null
+                    }
+                ) {
+                    Text("Hubungi via Email")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTrialLimitAlert = null }) {
+                    Text("Tutup")
+                }
             }
         )
     }

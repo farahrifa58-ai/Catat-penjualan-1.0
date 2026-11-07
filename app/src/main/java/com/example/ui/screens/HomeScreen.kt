@@ -22,15 +22,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Paid
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,10 +85,34 @@ fun HomeScreen(
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val todayDeposits by viewModel.selectedDateDeposits.collectAsStateWithLifecycle()
     val allDeposits by viewModel.allDeposits.collectAsStateWithLifecycle()
+    val allMenuItems by viewModel.allMenuItems.collectAsStateWithLifecycle()
 
     // Calculate summary statistics for the selected date
     val summary = ReportSummary.calculate(todayDeposits)
     val bestSeller = summary.bestSellingItems.firstOrNull { it.totalSold > 0 }
+
+    // Hitung total lapak yang dikirim pada tanggal yang dipilih
+    val deliveredStallsCount = remember(todayDeposits) {
+        val nonBlankStalls = todayDeposits.mapNotNull { it.deposit.stallId }.distinct()
+        if (nonBlankStalls.isNotEmpty()) {
+            nonBlankStalls.size
+        } else {
+            todayDeposits.map { it.deposit.stallName }.filter { it.isNotBlank() }.distinct().size
+        }
+    }
+
+    // Hitung total HPP (modal produk yang dikirim) pada tanggal yang dipilih
+    val totalHpp = remember(todayDeposits, allMenuItems) {
+        val menuMap = allMenuItems.associateBy { it.id }
+        val menuNameMap = allMenuItems.associateBy { it.name.trim().lowercase() }
+        todayDeposits.sumOf { d ->
+            d.items.sumOf { item ->
+                val h = (item.menuId?.let { menuMap[it]?.hpp }
+                    ?: menuNameMap[item.menuName.trim().lowercase()]?.hpp) ?: 0.0
+                item.quantitySent * h
+            }
+        }
+    }
 
     // Date picker dialog
     val calendar = Calendar.getInstance()
@@ -104,30 +131,6 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        if (com.example.util.AppConfig.IS_TRIAL) {
-            item {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFFFFEBEE)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = "🔴 Versi Trial (Batas Waktu 1 Jam)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = androidx.compose.ui.graphics.Color(0xFFD32F2F)
-                        )
-                    }
-                }
-            }
-        }
-
         // 1. Date Selector Banner
         item {
             Card(
@@ -213,8 +216,15 @@ fun HomeScreen(
                     modifier = Modifier.padding(vertical = 6.dp)
                 )
 
-                // Row 1: Total Dikirim & Total Terjual
+                // Row 1: Lapak Dikirim & Total Makanan Dikirim
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatCard(
+                        title = strings.totalLapakDikirim,
+                        value = "$deliveredStallsCount Lapak",
+                        icon = Icons.Default.Storefront,
+                        iconTint = Color(0xFF5E35B1),
+                        modifier = Modifier.weight(1f).testTag("stat_card_stalls_delivered")
+                    )
                     StatCard(
                         title = strings.totalDikirim,
                         value = FormatUtils.formatNumber(summary.totalSent),
@@ -222,6 +232,12 @@ fun HomeScreen(
                         iconTint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f).testTag("stat_card_sent")
                     )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Row 2: Total Terjual & Total Sisa
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     StatCard(
                         title = strings.totalTerjual,
                         value = FormatUtils.formatNumber(summary.totalSold),
@@ -229,18 +245,25 @@ fun HomeScreen(
                         iconTint = StatusGreen,
                         modifier = Modifier.weight(1f).testTag("stat_card_sold")
                     )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Row 2: Total Sisa & Total Omzet
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     StatCard(
                         title = strings.totalSisa,
                         value = FormatUtils.formatNumber(summary.totalRemaining),
                         icon = Icons.Default.Warning,
                         iconTint = StatusAmber,
                         modifier = Modifier.weight(1f).testTag("stat_card_remaining")
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Row 3: Total HPP (Modal) & Total Omzet (Pendapatan)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatCard(
+                        title = strings.totalHpp,
+                        value = FormatUtils.formatRupiah(totalHpp),
+                        icon = Icons.Default.Inventory2,
+                        iconTint = Color(0xFF00796B),
+                        modifier = Modifier.weight(1f).testTag("stat_card_hpp")
                     )
                     StatCard(
                         title = strings.totalOmzet,
@@ -253,7 +276,7 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Row 3: Total Uang Diterima & Sisa Tagihan Lapak
+                // Row 4: Total Uang Diterima & Sisa Tagihan Lapak
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     StatCard(
                         title = strings.totalUangDiterima,
@@ -265,8 +288,8 @@ fun HomeScreen(
                     StatCard(
                         title = strings.sisaTagihanLapak,
                         value = FormatUtils.formatRupiah(summary.totalReceivable),
-                        icon = Icons.Default.ReceiptLong,
-                        iconTint = if (summary.totalReceivable > 0) StatusRed else StatusGreen,
+                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                        iconTint = if (summary.totalReceivable > 0) Color(0xFFC25E00) else StatusGreen,
                         modifier = Modifier.weight(1f).testTag("stat_card_receivable")
                     )
                 }
@@ -481,7 +504,7 @@ fun HomeScreen(
                                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.ReceiptLong,
+                                            imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(16.dp)

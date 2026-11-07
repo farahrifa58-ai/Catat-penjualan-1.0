@@ -10,7 +10,9 @@ object AppConfig {
     var IS_TRIAL: Boolean = false
 
     const val DEVELOPER_EMAIL: String = "rendykurniawan0311@gmail.com"
-    const val TRIAL_LIMIT_MINUTES: Long = 60 // 1 Jam (60 minutes) as requested
+    const val TRIAL_LIMIT_MINUTES: Long = 30 // 30 Menit batas trial
+    const val TRIAL_MAX_STALLS: Int = 2     // Maksimal 2 lapak untuk trial
+    const val TRIAL_MAX_PRODUCTS: Int = 2   // Maksimal 2 produk/menu untuk trial
 
     private const val PREFS_NAME = "catat_jualan_trial_prefs"
     private const val KEY_FIRST_LAUNCH = "trial_first_launch_timestamp"

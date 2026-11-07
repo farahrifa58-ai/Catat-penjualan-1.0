@@ -166,6 +166,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             if (name.isBlank()) return@launch
+            if (isTrial && allStalls.value.size >= AppConfig.TRIAL_MAX_STALLS) {
+                _userMessage.emit("Batas Trial: Maksimal 2 Lapak. Hubungi ${AppConfig.DEVELOPER_EMAIL} untuk Full Version.")
+                return@launch
+            }
             val stall = StallEntity(
                 name = name.trim(),
                 address = address.trim(),
@@ -345,6 +349,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             if (name.isBlank()) return@launch
+            if (isTrial && allMenuItems.value.size >= AppConfig.TRIAL_MAX_PRODUCTS) {
+                _userMessage.emit("Batas Trial: Maksimal 2 Produk. Hubungi ${AppConfig.DEVELOPER_EMAIL} untuk Full Version.")
+                return@launch
+            }
             val item = MenuItemEntity(
                 name = name.trim(),
                 hpp = hpp,

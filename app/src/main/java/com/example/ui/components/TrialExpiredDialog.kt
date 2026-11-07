@@ -66,28 +66,29 @@ fun TrialExpiredDialog() {
                     modifier = Modifier
                         .size(68.dp)
                         .clip(CircleShape)
-                        .background(StatusRed.copy(alpha = 0.12f))
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Trial Selesai",
-                        tint = StatusRed,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(36.dp)
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Masa Uji Coba Selesai (1 Jam)",
+                    text = "Masa Uji Coba Selesai (30 Menit)",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Versi Trial (Batas Waktu 1 Jam Telah Berakhir)",
+                    text = "Batas Waktu Versi Trial Telah Berakhir",
                     fontSize = 13.sp,
-                    color = StatusRed,
-                    fontWeight = FontWeight.Bold
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         },
@@ -98,7 +99,7 @@ fun TrialExpiredDialog() {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Waktu uji coba aplikasi Catat Jualan telah selesai (1 jam). Untuk terus menggunakan aplikasi dan membuka akses penuh permanen tanpa batas waktu, silakan update ke Full Version dengan menghubungi email pengembang: $email",
+                    text = "Waktu uji coba aplikasi Catat Jualan telah selesai (30 menit). Untuk terus menggunakan aplikasi dan membuka akses penuh tanpa batas waktu, silakan upgrade ke Full Version dengan menghubungi email pengembang: $email",
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

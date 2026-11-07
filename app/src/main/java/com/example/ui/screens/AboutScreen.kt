@@ -78,9 +78,9 @@ fun AboutScreen(
         )
 
         Text(
-            text = if (com.example.util.AppConfig.IS_TRIAL) "Versi Trial (Batas 1 Jam)" else "Full Version",
+            text = if (com.example.util.AppConfig.IS_TRIAL) "Versi Trial (30 Menit)" else "Full Version",
             fontSize = 15.sp,
-            color = if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold
         )
 
@@ -115,21 +115,21 @@ fun AboutScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Status Versi Badge
+                // Status Versi Badge (Clean and professional, no red text)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(
-                            if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFFFEBEE)
+                            if (com.example.util.AppConfig.IS_TRIAL) MaterialTheme.colorScheme.secondaryContainer
                             else MaterialTheme.colorScheme.primaryContainer
                         )
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = if (com.example.util.AppConfig.IS_TRIAL) "Status: Versi Trial (Batas Waktu 1 Jam)" else "Status: Full Version (Akses Permanen)",
+                        text = if (com.example.util.AppConfig.IS_TRIAL) "Status: Versi Trial (Akses 30 Menit)" else "Status: Full Version (Akses Penuh)",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (com.example.util.AppConfig.IS_TRIAL) androidx.compose.ui.graphics.Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary
+                        color = if (com.example.util.AppConfig.IS_TRIAL) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
 
@@ -151,10 +151,17 @@ fun AboutScreen(
                     fontWeight = FontWeight.SemiBold
                 )
 
+                Spacer(modifier = Modifier.height(6.dp))
                 if (com.example.util.AppConfig.IS_TRIAL) {
-                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Untuk upgrade ke Full Version, hubungi email di atas.",
+                        text = "Batas Trial: Akses 30 menit, maksimal 2 lapak, dan 2 produk.\nUntuk upgrade ke Full Version, silakan hubungi email di atas.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    Text(
+                        text = "Versi Penuh: Akses permanen tanpa batas waktu, lapak, atau produk.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
